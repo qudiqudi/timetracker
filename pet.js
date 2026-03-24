@@ -77,7 +77,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        isNarrow() {
+            return window.innerWidth <= 520;
+        }
+
         startFromMascot() {
+            // On narrow screens, start directly in the hubi zone
+            if (this.isNarrow()) {
+                const target = this.findSafeTarget();
+                this.x = target.x;
+                this.y = target.y;
+                this.updateTransform(0);
+                this.setState(STATES.SITTING);
+                setTimeout(() => this.decideNextAction(), 2000);
+                return;
+            }
+
             // Find the slot reserved for the mascot in the header
             const slot = document.getElementById('mascot-slot');
             if (!slot) {
@@ -182,6 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         maxY() {
+            if (this.isNarrow()) {
+                const zone = document.getElementById('hubi-zone');
+                if (zone) {
+                    const r = zone.getBoundingClientRect();
+                    return r.bottom + window.scrollY - 80;
+                }
+            }
             // Stay above the bottom nav (roughly bottom 80px) with some margin
             return window.innerHeight - 160;
         }
@@ -189,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         getObstacles() {
             const obstacles = [];
             const margin = 20;
+            const scrollY = this.isNarrow() ? window.scrollY : 0;
 
             // The main content column — avoid entirely
             const app = document.getElementById('app');
@@ -196,9 +219,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r = app.getBoundingClientRect();
                 obstacles.push({
                     left: r.left - margin,
-                    top: r.top - margin,
+                    top: r.top + scrollY - margin,
                     right: r.right + margin,
-                    bottom: r.bottom + margin
+                    bottom: r.bottom + scrollY + margin
                 });
             }
 
@@ -208,9 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r = nav.getBoundingClientRect();
                 obstacles.push({
                     left: r.left,
-                    top: r.top - margin,
+                    top: r.top + scrollY - margin,
                     right: r.right,
-                    bottom: r.bottom
+                    bottom: r.bottom + scrollY
                 });
             }
 
@@ -228,7 +251,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
 
+        findMobileTarget() {
+            const zone = document.getElementById('hubi-zone');
+            if (!zone) return { x: window.innerWidth / 2, y: window.innerHeight };
+
+            const r = zone.getBoundingClientRect();
+            const scrollY = window.scrollY;
+            const catSize = 60;
+            const margin = 10;
+
+            const zoneTop = r.top + scrollY + margin;
+            const zoneBottom = r.bottom + scrollY - catSize - margin;
+            const zoneLeft = margin;
+            const zoneRight = window.innerWidth - catSize - margin;
+
+            const x = zoneLeft + Math.random() * Math.max(0, zoneRight - zoneLeft);
+            const y = zoneTop + Math.random() * Math.max(0, zoneBottom - zoneTop);
+            return { x, y };
+        }
+
         findSafeTarget() {
+            // On narrow screens, confine to the hubi zone
+            if (this.isNarrow()) {
+                return this.findMobileTarget();
+            }
+
             const obstacles = this.getObstacles();
             const maxX = window.innerWidth - 80;
             const maxY = this.maxY();
@@ -280,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateTransform(transitionTimeMs = 0) {
-            // Keep in bounds
+            // Keep in bounds — on mobile maxY is document-relative
             const boundsX = window.innerWidth - 80;
             const boundsY = this.maxY();
 
