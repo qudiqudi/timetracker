@@ -541,12 +541,17 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
+    opacity: 0.5;
     transition: all 0.3s;
 }
 
-.card:hover .card-delete {
-    opacity: 1;
+@media (hover: hover) {
+    .card-delete {
+        opacity: 0;
+    }
+    .card:hover .card-delete {
+        opacity: 1;
+    }
 }
 
 .card-delete:active {

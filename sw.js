@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hubi-tracker-v10';
+const CACHE_NAME = 'hubi-tracker-v11';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -8,7 +8,11 @@ const ASSETS_TO_CACHE = [
     './app.js',
     './pet.js',
     './manifest.json',
-    './assets/hubi.png'
+    './assets/hubi.png',
+    './assets/favicon.svg',
+    './assets/meow1.mp3',
+    './assets/meow2.mp3',
+    './assets/meow3.mp3'
 ];
 
 // Install — cache all static assets
