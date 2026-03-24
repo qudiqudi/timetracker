@@ -1134,9 +1134,13 @@ body::before {
         position: relative;
     }
 
+    #app {
+        min-height: auto;
+    }
+
     #hubi-zone {
         display: block;
-        height: 200px;
+        min-height: 300px;
         padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
     }
 
