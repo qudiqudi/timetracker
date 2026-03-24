@@ -406,7 +406,7 @@ function renderImportPage(appEl) {
     document.getElementById('do-import').addEventListener('click', async () => {
         const rawPhrase = document.getElementById('import-phrase').value.trim().toLowerCase();
         const phrase = rawPhrase.split(/\s+/).join(' ');
-        const data = document.getElementById('import-data').value.trim();
+        const data = document.getElementById('import-data').value.replace(/\s/g, '');
 
         console.log('[sync] phrase words:', phrase.split(' ').length, '| data length:', data.length, '| data prefix:', data.substring(0, 10));
 
