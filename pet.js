@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
         WALKING: 'walking',
         SLEEPING: 'sleeping',
         EATING: 'eating',
-        CHASING: 'chasing'
+        CHASING: 'chasing',
+        PETTED: 'petted'
     };
 
     class HubiPet {
@@ -30,11 +31,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="pet-prop prop-zzz" aria-hidden="true">💤</span>
                 <span class="pet-prop prop-fish" aria-hidden="true">🐟</span>
                 <span class="pet-prop prop-toy" aria-hidden="true">🧶</span>
+                <span class="pet-prop prop-heart" aria-hidden="true">&#10084;</span>
                 ${window.getHubiCatHTML('', 'hubi-pet-sprite')}
             `;
 
             document.body.appendChild(this.container);
             this.sprite = this.container.querySelector('#hubi-pet-sprite');
+
+            // Meow sounds
+            this.meowSounds = [];
+            this.loadMeows();
+
+            // Touch / click interaction — on the sprite since container has pointer-events: none
+            this.sprite.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                this.onPetted();
+            });
+        }
+
+        loadMeows() {
+            this.meowSounds = ['assets/meow1.mp3', 'assets/meow2.mp3', 'assets/meow3.mp3'].map(src => {
+                const audio = new Audio(src);
+                audio.preload = 'auto';
+                audio.volume = 0.5;
+                return audio;
+            });
+        }
+
+        playMeow() {
+            if (!this.meowSounds.length) return;
+            const audio = this.meowSounds[Math.floor(Math.random() * this.meowSounds.length)];
+            const clone = audio.cloneNode();
+            clone.volume = 0.4 + Math.random() * 0.3;
+            clone.playbackRate = 0.9 + Math.random() * 0.3;
+            clone.play().catch(() => {});
+        }
+
+        onPetted() {
+            // Interrupt current action and react
+            this.setState(STATES.PETTED, 1800);
+
+            // ~50% chance to meow
+            if (Math.random() < 0.5) {
+                this.playMeow();
+            }
         }
 
         startFromMascot() {

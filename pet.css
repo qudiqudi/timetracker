@@ -401,3 +401,48 @@
     50% { transform: rotate(-5deg); }
     75% { transform: rotate(-25deg); }
 }
+
+/* --- ANIMATION: PETTED --- */
+.petted .cat-eye {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    top: 2px;
+}
+
+.petted .cat-ear.left {
+    transform: rotate(-30deg) translateY(-3px);
+}
+
+.petted .cat-ear.right {
+    transform: rotate(30deg) translateY(-3px);
+}
+
+.petted .cat-body {
+    animation: purr-squish 0.3s ease-in-out infinite alternate;
+}
+
+.petted .cat-tail {
+    animation: tail-happy 0.6s ease-in-out infinite;
+}
+
+.petted .cat-head {
+    animation: head-nuzzle 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes purr-squish {
+    0% { transform: scaleX(1) scaleY(1); }
+    100% { transform: scaleX(1.06) scaleY(0.94); }
+}
+
+@keyframes tail-happy {
+    0%, 100% { transform: rotate(-20deg); }
+    25% { transform: rotate(-55deg); }
+    50% { transform: rotate(-10deg); }
+    75% { transform: rotate(-50deg); }
+}
+
+@keyframes head-nuzzle {
+    0% { transform: rotate(-5deg) translateY(1px); }
+    100% { transform: rotate(5deg) translateY(-1px); }
+}
