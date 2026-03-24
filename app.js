@@ -191,10 +191,7 @@ function renderIdlePage() {
     appEl.innerHTML = `
         <div class="page">
             <div class="page-header">
-                <div class="mascot-container">
-                    ${window.getHubiCatHTML('idle')}
-                    <span class="mascot-status">😴</span>
-                </div>
+                <div class="mascot-container" id="mascot-slot"></div>
                 <h1 class="page-title">${t('readyToWork')}</h1>
                 <p class="page-subtitle">${t('hubiWaiting')}</p>
             </div>
@@ -229,7 +226,6 @@ function renderActivePage() {
         <div class="page">
             <div class="page-header">
                 <div class="mascot-container">
-                    ${window.getHubiCatHTML(mascotClass)}
                     <span class="mascot-status">${statusEmoji}</span>
                 </div>
                 <h1 class="page-title">${statusText}</h1>
@@ -432,7 +428,7 @@ function showSessionSummary(session) {
                 </div>
                 <button class="btn btn-start" id="btn-done">
                     <span class="btn-icon">🐱</span>
-                    ${t('pawsome')}
+                    Pawsome!
                 </button>
             </div>
         </div>
@@ -464,7 +460,6 @@ function renderHistoryPage() {
         <div class="page">
             <div class="page-header">
                 <div class="mascot-container">
-                    ${window.getHubiCatHTML('idle sm', 'history-mascot')}
                 </div>
                 <h1 class="page-title">${t('history')}</h1>
                 <p class="page-subtitle">${t('yourSessions')}</p>
@@ -590,7 +585,6 @@ function renderStatsPage() {
         <div class="page">
             <div class="page-header">
                 <div class="mascot-container">
-                    ${window.getHubiCatHTML('idle sm', 'stats-mascot')}
                 </div>
                 <h1 class="page-title">${t('statistics')}</h1>
                 <p class="page-subtitle">${t('howProductivity')}</p>
@@ -603,8 +597,7 @@ function renderStatsPage() {
             </div>
 
             <div class="hubi-insight">
-                <div class="hubi-insight-img-wrapper" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; transform: scale(0.6); margin-left: -10px;">
-                    ${window.getHubiCatHTML('idle', 'insight-mascot')}
+                <div class="hubi-insight-img-wrapper" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; margin-left: -10px;">
                 </div>
                 <div class="hubi-insight-text">${insight}</div>
             </div>

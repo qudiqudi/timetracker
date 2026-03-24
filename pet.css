@@ -42,17 +42,22 @@
 /* --- Tail --- */
 .cat-tail {
     position: absolute;
-    bottom: 20px;
-    right: 5px;
-    width: 35px;
-    height: 10px;
+    bottom: 28px;
+    left: 55px;
+    width: 38px;
+    height: 8px;
     background: var(--cat-main);
-    border-radius: 10px;
-    transform-origin: left center;
-    transform: rotate(-30deg);
+    border-radius: 4px 8px 8px 4px;
+    transform-origin: 0% 50%;
+    transform: rotate(-45deg);
     z-index: 1;
     overflow: hidden;
-    transition: transform 0.6s ease, z-index 0s;
+    transition: transform 0.6s ease, z-index 0s 0s;
+}
+
+/* Slow, graceful curl when settling into sleep */
+.sleeping .cat-tail, .on-break .cat-tail {
+    transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s 0.6s;
 }
 
 /* Striping on tail */
@@ -63,9 +68,9 @@
     background: repeating-linear-gradient(
         90deg,
         transparent,
-        transparent 5px,
-        var(--cat-dark) 5px,
-        var(--cat-dark) 10px
+        transparent 6px,
+        var(--cat-dark) 6px,
+        var(--cat-dark) 11px
     );
     opacity: 0.3;
 }
@@ -229,6 +234,42 @@
    ANIMATION STATES
    ============================================ */
 
+/* --- ANIMATION: SITTING --- */
+/* Cat sits with back legs tucked, body lower, tail active */
+.sitting .cat-body {
+    transform: scaleX(0.95) scaleY(0.85) translateY(3px);
+}
+
+.sitting .cat-head {
+    transform: translateY(2px);
+}
+
+.sitting .cat-leg.back {
+    transform: rotate(50deg) translateY(-5px);
+}
+
+.sitting .cat-leg.front {
+    transform: rotate(5deg);
+}
+
+.sitting .cat-tail {
+    animation: tail-sitting 2.5s ease-in-out infinite;
+}
+
+.sitting .cat-eye {
+    animation: blink 4s infinite;
+}
+
+@keyframes tail-sitting {
+    0% { transform: rotate(-45deg); }
+    15% { transform: rotate(-20deg); }
+    30% { transform: rotate(-40deg); }
+    50% { transform: rotate(-15deg); }
+    65% { transform: rotate(-35deg); }
+    80% { transform: rotate(-25deg); }
+    100% { transform: rotate(-45deg); }
+}
+
 /* --- ANIMATION: IDLE --- */
 .idle .cat-tail {
     animation: tail-idle 3s ease-in-out infinite;
@@ -238,8 +279,12 @@
 }
 
 @keyframes tail-idle {
-    0%, 100% { transform: rotate(-30deg); }
-    50% { transform: rotate(-20deg); }
+    0% { transform: rotate(-45deg); }
+    20% { transform: rotate(-30deg); }
+    40% { transform: rotate(-40deg); }
+    60% { transform: rotate(-25deg); }
+    80% { transform: rotate(-42deg); }
+    100% { transform: rotate(-45deg); }
 }
 
 @keyframes blink {
@@ -275,8 +320,10 @@
 }
 
 @keyframes tail-walk {
-    0%, 100% { transform: rotate(-20deg); }
-    50% { transform: rotate(-50deg); }
+    0%, 100% { transform: rotate(-35deg); }
+    25% { transform: rotate(-55deg); }
+    50% { transform: rotate(-30deg); }
+    75% { transform: rotate(-60deg); }
 }
 
 /* --- ANIMATION: CHASING --- */
@@ -285,7 +332,7 @@
 .chasing .cat-leg.back.left { animation: leg-swing 0.3s infinite linear 0.15s; }
 .chasing .cat-leg.back.right { animation: leg-swing 0.3s infinite linear; }
 .chasing .cat-body { animation: body-bob 0.15s infinite alternate ease-in-out; }
-.chasing .cat-tail { transform: rotate(0deg); }
+.chasing .cat-tail { animation: tail-chase 0.3s infinite ease-in-out; }
 .chasing .cat-ear { transform: rotate(-50deg); }
 .chasing .cat-eye { height: 8px; width: 8px; border-radius: 50%; top: 2px; }
 
@@ -306,7 +353,7 @@
 }
 
 .sleeping .cat-tail, .on-break .cat-tail {
-    transform: rotate(-160deg) translateX(5px) translateY(-5px);
+    transform: rotate(-180deg) translateY(-8px);
     z-index: 5;
 }
 
@@ -324,7 +371,7 @@
     animation: eating-head 0.8s infinite ease-in-out;
 }
 .eating .cat-tail {
-    animation: eating-tail 2s infinite ease-in-out;
+    animation: eating-tail 2s ease-in-out infinite;
 }
 
 @keyframes eating-head {
@@ -333,8 +380,10 @@
 }
 
 @keyframes eating-tail {
-    0%, 100% { transform: rotate(-10deg); }
-    50% { transform: rotate(-30deg); }
+    0%, 100% { transform: rotate(-20deg); }
+    25% { transform: rotate(-40deg); }
+    50% { transform: rotate(-15deg); }
+    75% { transform: rotate(-45deg); }
 }
 
 /* --- WORKING BOUNCE --- */
@@ -343,4 +392,12 @@
 }
 .working .cat-tail {
     animation: tail-idle 2s infinite ease-in-out;
+}
+
+/* Chasing tail keyframes */
+@keyframes tail-chase {
+    0%, 100% { transform: rotate(-10deg); }
+    25% { transform: rotate(-30deg); }
+    50% { transform: rotate(-5deg); }
+    75% { transform: rotate(-25deg); }
 }

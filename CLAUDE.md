@@ -19,7 +19,7 @@ Pushes to `main` auto-deploy to GitHub Pages via `.github/workflows/deploy.yml`.
 - `index.html` -- shell with bottom nav (timer/history/stats tabs), loads everything else
 - `i18n.js` -- internationalization module. Detects browser locale, falls back to English. Exposes `I18n.t(key)`, `I18n.getLocale()`, and `I18n.lang`. Currently supports `en` and `de`.
 - `app.js` -- all app logic: SPA routing, timer, session management, history, stats. Renders pages by replacing `#app` innerHTML. No framework, no components, just functions. All user-facing strings go through `t()` from `i18n.js`.
-- `pet.js` -- `HubiPet` class: a roaming cat sprite that walks, sleeps, eats, and chases toys around the screen. Independent of app logic.
+- `pet.js` -- `HubiPet` class: a roaming cat sprite that walks, sleeps, eats, and chases toys around the screen. Independent of app logic. On page load the pet starts sitting in the header mascot slot, then jumps down in a parabolic arc. It avoids UI elements by computing safe zones (left/right/below the `#app` content column).
 - `styles.css` -- app styles
 - `pet.css` -- CSS-only cat sprite and pet animations
 - `sw.js` -- service worker for offline caching. Bump `CACHE_NAME` version when changing cached assets.
@@ -43,4 +43,5 @@ To add a new language: add a translation object to the `translations` map in `i1
 
 - Pages render by replacing `appEl.innerHTML` with template literal HTML, then attaching event listeners imperatively. There is no virtual DOM or diffing.
 - The timer page has three render states: idle, active (working/on-break), and session summary.
-- `window.getHubiCatHTML()` generates the CSS cat markup used by both the app mascot and the roaming pet.
+- `window.getHubiCatHTML()` generates the CSS cat markup. Only one cat instance exists at a time -- the roaming pet. Pages no longer render static mascot cats; they use an empty `#mascot-slot` div to reserve header space.
+- The "Pawsome!" button text is always in English, never translated.

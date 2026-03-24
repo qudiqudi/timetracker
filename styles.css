@@ -184,6 +184,11 @@ body::before {
     margin-bottom: 8px;
 }
 
+#mascot-slot {
+    width: 80px;
+    height: 80px;
+}
+
 .mascot-img {
     width: 100px;
     height: 100px;
@@ -1000,7 +1005,6 @@ body::before {
     left: 0;
     z-index: 0;
     pointer-events: none;
-    transition: transform cubic-bezier(0.25, 0.1, 0.25, 1);
     will-change: transform;
 }
 
