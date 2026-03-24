@@ -382,6 +382,12 @@ function renderImportPage(appEl) {
             <div class="sync-section">
                 <div class="sync-label">${t('encryptedData')}</div>
                 <textarea class="sync-data-area" id="import-data" placeholder="${t('pasteData')}"></textarea>
+                <div class="sync-btn-row">
+                    <button class="btn btn-secondary" id="scan-data-qr">
+                        <span class="btn-icon">📷</span>
+                        ${t('scanQR')}
+                    </button>
+                </div>
             </div>
 
             <div class="actions">
@@ -400,6 +406,12 @@ function renderImportPage(appEl) {
     document.getElementById('scan-qr').addEventListener('click', () => {
         openScanner(value => {
             document.getElementById('import-phrase').value = value;
+        });
+    });
+
+    document.getElementById('scan-data-qr').addEventListener('click', () => {
+        openScanner(value => {
+            document.getElementById('import-data').value = value;
         });
     });
 
