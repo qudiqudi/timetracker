@@ -998,7 +998,7 @@ body::before {
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 1000;
+    z-index: 0;
     pointer-events: none;
     transition: transform cubic-bezier(0.25, 0.1, 0.25, 1);
     will-change: transform;
