@@ -941,27 +941,6 @@ body::before {
     border-radius: 4px;
 }
 
-/* --- Hubi Zone (mobile pet area) --- */
-#hubi-zone {
-    display: none;
-}
-
-@media (max-width: 520px) {
-    body {
-        position: relative;
-    }
-
-    #hubi-zone {
-        display: block;
-        height: 200px;
-        padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
-    }
-
-    #hubi-pet {
-        position: absolute;
-    }
-}
-
 /* --- Responsive --- */
 @media (min-width: 481px) {
     #app {
@@ -1143,4 +1122,25 @@ body::before {
 .prop-heart {
     color: #ff4466;
     font-size: 1.2rem;
+}
+
+/* --- Hubi Zone (mobile pet area) --- */
+#hubi-zone {
+    display: none;
+}
+
+@media (max-width: 520px) {
+    body {
+        position: relative;
+    }
+
+    #hubi-zone {
+        display: block;
+        height: 200px;
+        padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+    }
+
+    #hubi-pet {
+        position: absolute;
+    }
 }
