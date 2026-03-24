@@ -404,7 +404,8 @@ function renderImportPage(appEl) {
     });
 
     document.getElementById('do-import').addEventListener('click', async () => {
-        const phrase = document.getElementById('import-phrase').value.trim().toLowerCase();
+        const rawPhrase = document.getElementById('import-phrase').value.trim().toLowerCase();
+        const phrase = rawPhrase.split(/\s+/).join(' ');
         const data = document.getElementById('import-data').value.trim();
 
         if (!validatePhrase(phrase)) {
