@@ -294,9 +294,12 @@ async function renderExportPage(appEl) {
     }
 
     const phraseWords = phrase.split(' ').map(w => `<span class="sync-phrase-word">${w}</span>`).join('');
-    const qrPhrase = QR.toSVG(phrase, 200);
-    const showDataQR = encrypted.length < 500;
-    const qrData = showDataQR ? QR.toSVG(encrypted, 200) : '';
+    let qrPhrase = '';
+    try { qrPhrase = QR.toSVG(phrase, 200); } catch {}
+    let qrData = '';
+    if (encrypted.length <= 250) {
+        try { qrData = QR.toSVG(encrypted, 200); } catch {}
+    }
 
     appEl.innerHTML = `
         <div class="page">
