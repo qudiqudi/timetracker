@@ -398,27 +398,16 @@ function renderImportPage(appEl) {
 
     document.getElementById('scan-qr').addEventListener('click', () => {
         openScanner(value => {
-            console.log('[sync] scanned raw:', JSON.stringify(value.substring(0, 120)));
-            const sep = value.indexOf('|' + DATA_PREFIX);
-            if (sep !== -1) {
-                document.getElementById('import-phrase').value = value.substring(0, sep);
-                const data = value.substring(sep + 1);
+            const dataIdx = value.indexOf(DATA_PREFIX);
+            if (dataIdx > 0) {
+                const phrase = value.substring(0, dataIdx).replace(/[||\n]/g, '').trim();
+                const data = value.substring(dataIdx);
+                document.getElementById('import-phrase').value = phrase;
                 scannedData = data;
                 document.getElementById('import-data').value = data;
                 showToast(t('qrScanned'));
             } else {
-                // Try newline separator too (older QR codes)
-                const nl = value.indexOf('\n');
-                if (nl !== -1 && value.substring(nl + 1).startsWith(DATA_PREFIX)) {
-                    document.getElementById('import-phrase').value = value.substring(0, nl);
-                    const data = value.substring(nl + 1);
-                    scannedData = data;
-                    document.getElementById('import-data').value = data;
-                    showToast(t('qrScanned'));
-                } else {
-                    document.getElementById('import-phrase').value = value;
-                    console.log('[sync] no data found in QR — phrase only');
-                }
+                document.getElementById('import-phrase').value = value;
             }
         });
     });
