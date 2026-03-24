@@ -1,0 +1,39 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+"Hubi Time Tracker" -- a cat-themed PWA for tracking work hours. Pure vanilla JS, no build tools, no framework, no package manager. Static files served directly.
+
+## Development
+
+Open `index.html` in a browser. No build step, no dev server required. For service worker testing, use a local HTTP server (e.g., `python3 -m http.server 8000`).
+
+## Deployment
+
+Pushes to `main` auto-deploy to GitHub Pages via `.github/workflows/deploy.yml`. The workflow uploads the entire repo root as a static site.
+
+## Architecture
+
+- `index.html` -- shell with bottom nav (timer/history/stats tabs), loads everything else
+- `app.js` -- all app logic: SPA routing, timer, session management, history, stats. Renders pages by replacing `#app` innerHTML. No framework, no components, just functions.
+- `pet.js` -- `HubiPet` class: a roaming cat sprite that walks, sleeps, eats, and chases toys around the screen. Independent of app logic.
+- `styles.css` -- app styles
+- `pet.css` -- CSS-only cat sprite and pet animations
+- `sw.js` -- service worker for offline caching. Bump `CACHE_NAME` version when changing cached assets.
+- `manifest.json` -- PWA manifest
+
+## Data layer
+
+All data lives in `localStorage`:
+- `hubi_sessions` -- array of completed session records (work/break durations, timestamps)
+- `hubi_active_state` -- current in-progress timer state (survives page refresh)
+
+`Storage` and `ActiveState` objects in `app.js` are the only access points for persisted data.
+
+## Key patterns
+
+- Pages render by replacing `appEl.innerHTML` with template literal HTML, then attaching event listeners imperatively. There is no virtual DOM or diffing.
+- The timer page has three render states: idle, active (working/on-break), and session summary.
+- `window.getHubiCatHTML()` generates the CSS cat markup used by both the app mascot and the roaming pet.
