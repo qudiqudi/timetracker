@@ -43,17 +43,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         setState(newState, durationMs) {
-            this.container.classList.remove(this.state);
+            const prevState = this.state;
+            this.container.classList.remove(prevState);
             this.state = newState;
             this.container.classList.add(this.state);
 
             if (durationMs) {
                 setTimeout(() => {
                     if (this.state === newState) {
-                        this.decideNextAction();
+                        this.transitionToIdle();
                     }
                 }, durationMs);
             }
+        }
+
+        // Smoothly return to idle pose before picking the next action.
+        // The CSS transitions on body parts handle the visual interpolation.
+        transitionToIdle() {
+            this.container.classList.remove(this.state);
+            this.state = STATES.IDLE;
+            this.container.classList.add(STATES.IDLE);
+
+            // Let the body parts settle into their idle transforms before deciding
+            const settleTime = 600 + Math.random() * 800;
+            setTimeout(() => {
+                if (this.state === STATES.IDLE) {
+                    this.decideNextAction();
+                }
+            }, settleTime);
         }
 
         updateTransform(transitionTimeMs = 0) {
@@ -114,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             setTimeout(() => {
                 if (this.state === STATES.WALKING) {
-                    this.setState(STATES.IDLE, 500 + Math.random() * 1000);
+                    this.transitionToIdle();
                 }
             }, duration);
         }
@@ -140,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             setTimeout(() => {
                 this.speed = 100; // Reset speed
-                this.setState(STATES.IDLE, 1000 + Math.random() * 2000); // Wait/catch breath
+                this.transitionToIdle();
             }, duration);
         }
     }
