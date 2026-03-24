@@ -294,7 +294,7 @@ async function renderExportPage(appEl) {
     }
 
     const phraseWords = phrase.split(' ').map(w => `<span class="sync-phrase-word">${w}</span>`).join('');
-    const combined = phrase + '\n' + encrypted;
+    const combined = phrase + '|' + encrypted;
     let qrCombined = '';
     try { qrCombined = QR.toSVG(combined, 240); } catch {}
 
@@ -398,10 +398,11 @@ function renderImportPage(appEl) {
 
     document.getElementById('scan-qr').addEventListener('click', () => {
         openScanner(value => {
-            const nl = value.indexOf('\n');
-            if (nl !== -1 && value.substring(nl + 1).startsWith(DATA_PREFIX)) {
-                document.getElementById('import-phrase').value = value.substring(0, nl);
-                scannedData = value.substring(nl + 1);
+            console.log('[sync] scanned value length:', value.length, '| has pipe:', value.includes('|'), '| has HUBI1:', value.includes(DATA_PREFIX));
+            const sep = value.indexOf('|' + DATA_PREFIX);
+            if (sep !== -1) {
+                document.getElementById('import-phrase').value = value.substring(0, sep);
+                scannedData = value.substring(sep + 1);
                 showToast(t('qrScanned'));
             } else {
                 document.getElementById('import-phrase').value = value;
