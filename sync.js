@@ -413,9 +413,19 @@ function renderImportPage(appEl) {
     });
 
     document.getElementById('do-import').addEventListener('click', async () => {
-        const rawPhrase = document.getElementById('import-phrase').value.trim().toLowerCase();
+        let rawPhrase = document.getElementById('import-phrase').value.trim().toLowerCase();
+        let data = scannedData || document.getElementById('import-data').value.replace(/\s/g, '');
+
+        // Handle combined QR content landing in the phrase field
+        const hubiIdx = rawPhrase.indexOf('hubi1:');
+        if (hubiIdx > 0 && !data) {
+            data = rawPhrase.substring(hubiIdx).replace(/\s/g, '');
+            // Fix case: DATA_PREFIX is uppercase
+            data = 'HUBI1:' + data.substring(6);
+            rawPhrase = rawPhrase.substring(0, hubiIdx).replace(/[|]/g, '').trim();
+        }
+
         const phrase = rawPhrase.split(/\s+/).join(' ');
-        const data = scannedData || document.getElementById('import-data').value.replace(/\s/g, '');
 
         console.log('[sync] phrase words:', phrase.split(' ').length, '| data length:', data.length, '| data prefix:', data.substring(0, 10));
 
