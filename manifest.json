@@ -1,0 +1,18 @@
+{
+    "name": "Hubi Time Tracker",
+    "short_name": "Hubi Timer",
+    "description": "A playful cat-themed time tracking app starring Hubi the orange tabby!",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#FFF5E6",
+    "theme_color": "#FF8C42",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "assets/hubi.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

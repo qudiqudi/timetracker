@@ -1,0 +1,9 @@
+# Ignore system/AI files
+.gemini/
+.agents/
+_agents/
+.agent/
+.DS_Store
+node_modules/
+dist/
+build/
