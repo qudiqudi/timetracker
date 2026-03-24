@@ -75,11 +75,11 @@ function formatHoursMinutes(ms) {
 function formatDate(dateStr) {
     const d = new Date(dateStr);
     const options = { weekday: 'short', month: 'short', day: 'numeric' };
-    return d.toLocaleDateString('en-US', options);
+    return d.toLocaleDateString(I18n.getLocale(), options);
 }
 
 function formatTime(timestamp) {
-    return new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return new Date(timestamp).toLocaleTimeString(I18n.getLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 function todayStr() {
@@ -102,7 +102,7 @@ function getWeekDates() {
 }
 
 function getDayLabel(dateStr) {
-    return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' });
+    return new Date(dateStr).toLocaleDateString(I18n.getLocale(), { weekday: 'short' });
 }
 
 window.getHubiCatHTML = function(classes = '', id = 'mascot') {
@@ -195,20 +195,20 @@ function renderIdlePage() {
                     ${window.getHubiCatHTML('idle')}
                     <span class="mascot-status">😴</span>
                 </div>
-                <h1 class="page-title">Ready to work?</h1>
-                <p class="page-subtitle">Hubi is waiting for you!</p>
+                <h1 class="page-title">${t('readyToWork')}</h1>
+                <p class="page-subtitle">${t('hubiWaiting')}</p>
             </div>
 
             <div class="timer-display">
-                <div class="timer-label">Elapsed Time</div>
+                <div class="timer-label">${t('elapsedTime')}</div>
                 <div class="timer-time" id="timer-display">00:00:00</div>
-                <div class="timer-date">${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                <div class="timer-date">${new Date().toLocaleDateString(I18n.getLocale(), { weekday: 'long', month: 'long', day: 'numeric' })}</div>
             </div>
 
             <div class="actions">
                 <button class="btn btn-start" id="btn-start">
                     <span class="btn-icon">🐾</span>
-                    Start Working
+                    ${t('startWorking')}
                 </button>
             </div>
         </div>
@@ -222,8 +222,8 @@ function renderActivePage() {
     const statusEmoji = isBreak ? '💤' : '⚡';
     const statusClass = isBreak ? 'on-break' : 'working';
     const mascotClass = isBreak ? 'on-break' : 'working';
-    const statusText = isBreak ? 'Taking a break...' : 'Working hard!';
-    const subtitleText = isBreak ? 'Hubi is napping 😴' : 'Hubi is busy! 🐱';
+    const statusText = isBreak ? t('takingBreak') : t('workingHard');
+    const subtitleText = isBreak ? t('hubiNapping') : t('hubiBusy');
 
     appEl.innerHTML = `
         <div class="page">
@@ -237,16 +237,16 @@ function renderActivePage() {
             </div>
 
             <div class="timer-display ${statusClass}">
-                <div class="timer-label ${statusClass}">${isBreak ? 'Break Time' : 'Work Time'}</div>
+                <div class="timer-label ${statusClass}">${isBreak ? t('breakTime') : t('workTime')}</div>
                 <div class="timer-time" id="timer-display">00:00:00</div>
-                <div class="timer-date">Started at ${formatTime(activeSession.startTime)}</div>
+                <div class="timer-date">${t('startedAt')} ${formatTime(activeSession.startTime)}</div>
                 <div class="timer-breakdown">
                     <div class="breakdown-item">
-                        <div class="breakdown-label">Total Work</div>
+                        <div class="breakdown-label">${t('totalWork')}</div>
                         <div class="breakdown-value" id="total-work">--:--</div>
                     </div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">Total Break</div>
+                        <div class="breakdown-label">${t('totalBreak')}</div>
                         <div class="breakdown-value" id="total-break">--:--</div>
                     </div>
                 </div>
@@ -256,17 +256,17 @@ function renderActivePage() {
                 ${isBreak ? `
                     <button class="btn btn-resume" id="btn-resume">
                         <span class="btn-icon">🐾</span>
-                        Resume Working
+                        ${t('resumeWorking')}
                     </button>
                 ` : `
                     <button class="btn btn-break" id="btn-break">
                         <span class="btn-icon">☕</span>
-                        Take a Break
+                        ${t('takeBreak')}
                     </button>
                 `}
                 <button class="btn btn-finish" id="btn-finish">
                     <span class="btn-icon">🏁</span>
-                    Finish Work
+                    ${t('finishWork')}
                 </button>
             </div>
         </div>
@@ -331,7 +331,7 @@ function startWork() {
         status: 'working'
     };
     ActiveState.set(activeSession);
-    showToast('🐾 Let\'s get to work!');
+    showToast(t('toastStartWork'));
     renderActivePage();
 }
 
@@ -340,7 +340,7 @@ function startBreak() {
     activeSession.status = 'on-break';
     activeSession.currentBreakStart = Date.now();
     ActiveState.set(activeSession);
-    showToast('☕ Break time! Hubi is napping...');
+    showToast(t('toastBreak'));
     renderActivePage();
 }
 
@@ -356,17 +356,17 @@ function resumeWork() {
     activeSession.currentBreakStart = null;
     activeSession.status = 'working';
     ActiveState.set(activeSession);
-    showToast('🐾 Back to work!');
+    showToast(t('toastResume'));
     renderActivePage();
 }
 
 function confirmFinish() {
     showDialog(
         '🏁',
-        'Finish work?',
-        'Hubi will save this session to your history.',
-        'Finish',
-        'Cancel',
+        t('finishQuestion'),
+        t('finishDescription'),
+        t('finish'),
+        t('cancel'),
         finishWork
     );
 }
@@ -415,24 +415,24 @@ function showSessionSummary(session) {
         <div class="page">
             <div class="summary-card">
                 <div class="summary-emoji">🎉</div>
-                <div class="summary-title">Great work today!</div>
+                <div class="summary-title">${t('greatWork')}</div>
                 <div class="summary-stats">
                     <div class="summary-stat">
-                        <div class="summary-stat-label">Work</div>
+                        <div class="summary-stat-label">${t('work')}</div>
                         <div class="summary-stat-value">${formatHoursMinutes(session.totalWork)}</div>
                     </div>
                     <div class="summary-stat">
-                        <div class="summary-stat-label">Breaks</div>
+                        <div class="summary-stat-label">${t('breaks')}</div>
                         <div class="summary-stat-value">${formatHoursMinutes(session.totalBreak)}</div>
                     </div>
                     <div class="summary-stat">
-                        <div class="summary-stat-label">Total</div>
+                        <div class="summary-stat-label">${t('total')}</div>
                         <div class="summary-stat-value">${formatHoursMinutes(session.endTime - session.startTime)}</div>
                     </div>
                 </div>
                 <button class="btn btn-start" id="btn-done">
                     <span class="btn-icon">🐱</span>
-                    Pawsome!
+                    ${t('pawsome')}
                 </button>
             </div>
         </div>
@@ -466,8 +466,8 @@ function renderHistoryPage() {
                 <div class="mascot-container">
                     ${window.getHubiCatHTML('idle sm', 'history-mascot')}
                 </div>
-                <h1 class="page-title">History</h1>
-                <p class="page-subtitle">Your tracked sessions</p>
+                <h1 class="page-title">${t('history')}</h1>
+                <p class="page-subtitle">${t('yourSessions')}</p>
             </div>
 
             <div class="filter-bar">
@@ -506,13 +506,13 @@ function renderHistoryPage() {
             const id = e.currentTarget.dataset.id;
             showDialog(
                 '🗑️',
-                'Delete session?',
-                'This can\'t be undone. Hubi will forget this session forever!',
-                'Delete',
-                'Keep it',
+                t('deleteSession'),
+                t('deleteDescription'),
+                t('delete'),
+                t('keepIt'),
                 () => {
                     Storage.deleteSession(id);
-                    showToast('🗑️ Session deleted');
+                    showToast(t('sessionDeleted'));
                     renderHistoryPage();
                 }
             );
@@ -524,8 +524,8 @@ function renderEmptyHistory() {
     return `
         <div class="empty-state">
             <div class="empty-state-emoji">😿</div>
-            <div class="empty-state-text">No sessions yet!</div>
-            <div class="empty-state-sub">Start tracking to see your history here</div>
+            <div class="empty-state-text">${t('noSessionsYet')}</div>
+            <div class="empty-state-sub">${t('startTrackingHistory')}</div>
         </div>
     `;
 }
@@ -533,22 +533,22 @@ function renderEmptyHistory() {
 function renderSessionCard(session) {
     return `
         <div class="card">
-            <button class="card-delete" data-id="${session.id}" title="Delete">✕</button>
+            <button class="card-delete" data-id="${session.id}" title="${t('delete')}">✕</button>
             <div class="card-header">
                 <div class="card-title">${formatDate(session.date)}</div>
                 <div class="card-date">${formatTime(session.startTime)} – ${formatTime(session.endTime)}</div>
             </div>
             <div class="card-body">
                 <div class="card-stat">
-                    <div class="card-stat-label">Work</div>
+                    <div class="card-stat-label">${t('work')}</div>
                     <div class="card-stat-value work">${formatHoursMinutes(session.totalWork)}</div>
                 </div>
                 <div class="card-stat">
-                    <div class="card-stat-label">Breaks</div>
+                    <div class="card-stat-label">${t('breaks')}</div>
                     <div class="card-stat-value break-val">${formatHoursMinutes(session.totalBreak)}</div>
                 </div>
                 <div class="card-stat">
-                    <div class="card-stat-label">Total</div>
+                    <div class="card-stat-label">${t('total')}</div>
                     <div class="card-stat-value">${formatHoursMinutes(session.endTime - session.startTime)}</div>
                 </div>
             </div>
@@ -592,14 +592,14 @@ function renderStatsPage() {
                 <div class="mascot-container">
                     ${window.getHubiCatHTML('idle sm', 'stats-mascot')}
                 </div>
-                <h1 class="page-title">Statistics</h1>
-                <p class="page-subtitle">How's your productivity?</p>
+                <h1 class="page-title">${t('statistics')}</h1>
+                <p class="page-subtitle">${t('howProductivity')}</p>
             </div>
 
             <div class="period-toggle">
-                <button class="period-btn ${statsPeriod === 'week' ? 'active' : ''}" data-period="week">Week</button>
-                <button class="period-btn ${statsPeriod === 'month' ? 'active' : ''}" data-period="month">Month</button>
-                <button class="period-btn ${statsPeriod === 'all' ? 'active' : ''}" data-period="all">All Time</button>
+                <button class="period-btn ${statsPeriod === 'week' ? 'active' : ''}" data-period="week">${t('week')}</button>
+                <button class="period-btn ${statsPeriod === 'month' ? 'active' : ''}" data-period="month">${t('month')}</button>
+                <button class="period-btn ${statsPeriod === 'all' ? 'active' : ''}" data-period="all">${t('allTime')}</button>
             </div>
 
             <div class="hubi-insight">
@@ -613,22 +613,22 @@ function renderStatsPage() {
                 <div class="stat-card">
                     <div class="stat-card-icon">⏱️</div>
                     <div class="stat-card-value">${formatHoursMinutes(totalWorkMs)}</div>
-                    <div class="stat-card-label">Total Work</div>
+                    <div class="stat-card-label">${t('totalWork')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-icon">☕</div>
                     <div class="stat-card-value">${formatHoursMinutes(totalBreakMs)}</div>
-                    <div class="stat-card-label">Total Breaks</div>
+                    <div class="stat-card-label">${t('totalBreaks')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-icon">📅</div>
                     <div class="stat-card-value">${daysWorked}</div>
-                    <div class="stat-card-label">Days Worked</div>
+                    <div class="stat-card-label">${t('daysWorked')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-icon">📊</div>
                     <div class="stat-card-value">${formatHoursMinutes(avgWorkMs)}</div>
-                    <div class="stat-card-label">Avg / Day</div>
+                    <div class="stat-card-label">${t('avgPerDay')}</div>
                 </div>
             </div>
 
@@ -637,8 +637,8 @@ function renderStatsPage() {
             ${sessions.length === 0 ? `
                 <div class="empty-state">
                     <div class="empty-state-emoji">📊</div>
-                    <div class="empty-state-text">No data for this period</div>
-                    <div class="empty-state-sub">Start tracking to see your stats!</div>
+                    <div class="empty-state-text">${t('noDataPeriod')}</div>
+                    <div class="empty-state-sub">${t('startTrackingStats')}</div>
                 </div>
             ` : ''}
         </div>
@@ -680,8 +680,8 @@ function renderWeekChart(sessions) {
         const isToday = date === todayStr();
         return `
             <div class="chart-bar-group">
-                <div class="chart-bar break-bar" style="height: ${breakH}px;" title="Break: ${formatHoursMinutes(dailyBreak[date])}"></div>
-                <div class="chart-bar work-bar" style="height: ${workH}px;" title="Work: ${formatHoursMinutes(dailyWork[date])}"></div>
+                <div class="chart-bar break-bar" style="height: ${breakH}px;" title="${t('breakTime')}: ${formatHoursMinutes(dailyBreak[date])}"></div>
+                <div class="chart-bar work-bar" style="height: ${workH}px;" title="${t('workTime')}: ${formatHoursMinutes(dailyWork[date])}"></div>
                 <span class="chart-bar-label" style="${isToday ? 'color: var(--orange-primary); font-weight: 900;' : ''}">${getDayLabel(date)}</span>
             </div>
         `;
@@ -689,7 +689,7 @@ function renderWeekChart(sessions) {
 
     return `
         <div class="chart-container">
-            <div class="chart-title">This Week 🐾</div>
+            <div class="chart-title">${t('thisWeek')}</div>
             <div class="chart-bars">
                 ${barsHTML}
             </div>
@@ -699,30 +699,31 @@ function renderWeekChart(sessions) {
 
 function getHubiInsight(totalWorkMs, daysWorked, period) {
     const totalHours = totalWorkMs / 3600000;
+    const h = totalHours.toFixed(0);
 
     if (daysWorked === 0) {
         const messages = [
-            "Hubi is waiting for you to start tracking! 🐱",
-            "No sessions yet — let's get started! 😺",
-            "Hubi is bored... time to track some work! 🐾"
+            t('insightWaiting'),
+            t('insightNoSessions'),
+            t('insightBored')
         ];
         return messages[Math.floor(Math.random() * messages.length)];
     }
 
     if (period === 'week') {
-        if (totalHours >= 40) return `Wow! ${totalHours.toFixed(0)}h this week! Hubi is impressed! 😻 Don't forget to rest!`;
-        if (totalHours >= 30) return `${totalHours.toFixed(0)}h this week — you're on fire! 🔥 Hubi approves!`;
-        if (totalHours >= 20) return `${totalHours.toFixed(0)}h this week. Nice pace! Hubi is purring with pride! 😺`;
-        return `${totalHours.toFixed(0)}h this week. Keep it up! Hubi believes in you! 💪🐱`;
+        if (totalHours >= 40) return t('insightWeek40')(h);
+        if (totalHours >= 30) return t('insightWeek30')(h);
+        if (totalHours >= 20) return t('insightWeek20')(h);
+        return t('insightWeekLow')(h);
     }
 
     if (period === 'month') {
-        if (totalHours >= 160) return `${totalHours.toFixed(0)}h this month! That's a full-time cat! 😹`;
-        if (totalHours >= 80) return `${totalHours.toFixed(0)}h this month — productive kitty! 🐱✨`;
-        return `${totalHours.toFixed(0)}h this month. Hubi is tracking with you! 📋🐾`;
+        if (totalHours >= 160) return t('insightMonth160')(h);
+        if (totalHours >= 80) return t('insightMonth80')(h);
+        return t('insightMonthLow')(h);
     }
 
-    return `${totalHours.toFixed(0)} total hours tracked across ${daysWorked} days! Hubi is proud! 🏆🐱`;
+    return t('insightAll')(h, daysWorked);
 }
 
 // ---- Toast ----

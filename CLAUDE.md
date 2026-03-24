@@ -17,7 +17,8 @@ Pushes to `main` auto-deploy to GitHub Pages via `.github/workflows/deploy.yml`.
 ## Architecture
 
 - `index.html` -- shell with bottom nav (timer/history/stats tabs), loads everything else
-- `app.js` -- all app logic: SPA routing, timer, session management, history, stats. Renders pages by replacing `#app` innerHTML. No framework, no components, just functions.
+- `i18n.js` -- internationalization module. Detects browser locale, falls back to English. Exposes `I18n.t(key)`, `I18n.getLocale()`, and `I18n.lang`. Currently supports `en` and `de`.
+- `app.js` -- all app logic: SPA routing, timer, session management, history, stats. Renders pages by replacing `#app` innerHTML. No framework, no components, just functions. All user-facing strings go through `t()` from `i18n.js`.
 - `pet.js` -- `HubiPet` class: a roaming cat sprite that walks, sleeps, eats, and chases toys around the screen. Independent of app logic.
 - `styles.css` -- app styles
 - `pet.css` -- CSS-only cat sprite and pet animations
@@ -31,6 +32,12 @@ All data lives in `localStorage`:
 - `hubi_active_state` -- current in-progress timer state (survives page refresh)
 
 `Storage` and `ActiveState` objects in `app.js` are the only access points for persisted data.
+
+## Internationalization
+
+Language is auto-detected from `navigator.language` at page load. No user toggle -- follows the device/browser language. `i18n.js` loads before `app.js` and sets `<html lang>` dynamically. Static nav labels use `data-i18n` attributes. All other strings use `t('key')` calls in template literals.
+
+To add a new language: add a translation object to the `translations` map in `i18n.js` keyed by ISO 639-1 code (e.g., `fr`). The fallback chain is: detected language -> `en`.
 
 ## Key patterns
 
