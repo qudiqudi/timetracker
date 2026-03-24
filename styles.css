@@ -993,43 +993,77 @@ body::before {
     color: var(--chocolate);
 }
 
-/* --- Cat Animations --- */
-.cat-world {
+/* --- Hubi Virtual Pet --- */
+#hubi-pet {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    z-index: 1000;
     pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
+    transition: transform cubic-bezier(0.25, 0.1, 0.25, 1);
+    will-change: transform;
 }
 
-.bg-cat {
-    position: absolute;
-    font-size: 2.5rem;
-    opacity: 0.7;
-    user-select: none;
+#hubi-pet-sprite {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(61, 41, 20, 0.2));
 }
 
-/* Sleeping Cat */
-.sleeping-cat {
-    bottom: 120px;
-    right: 20px;
-    animation: catBreathing 4s ease-in-out infinite;
+/* Pet States Animation */
+#hubi-pet.walking #hubi-pet-sprite, #hubi-pet.chasing #hubi-pet-sprite {
+    animation: petWalk 0.3s alternate infinite ease-in-out;
 }
-.sleeping-cat .zzz {
+
+#hubi-pet.sleeping #hubi-pet-sprite {
+    animation: petSleep 3s infinite ease-in-out;
+}
+
+#hubi-pet.eating #hubi-pet-sprite {
+    animation: petEat 1s infinite alternate ease-in-out;
+    transform-origin: bottom left;
+}
+
+@keyframes petWalk {
+    0% { transform: translateY(0px) rotate(-3deg); }
+    100% { transform: translateY(-4px) rotate(3deg); }
+}
+
+@keyframes petSleep {
+    0%, 100% { transform: scaleY(1) translateY(0); }
+    50% { transform: scaleY(0.95) translateY(2px); }
+}
+
+@keyframes petEat {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(15deg) translateY(4px); }
+}
+
+/* Pet Props (food, zzz, toy) */
+.pet-prop {
     position: absolute;
+    font-size: 1.5rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+#hubi-pet.sleeping .prop-zzz {
+    opacity: 1;
     top: -20px;
     right: -10px;
-    font-size: 1.2rem;
-    opacity: 0;
-    animation: floatZzz 4s linear infinite;
+    animation: floatZzz 3s linear infinite;
 }
 
-@keyframes catBreathing {
-    0%, 100% { transform: scale(1) rotate(-5deg); }
-    50% { transform: scale(1.05) rotate(-5deg); }
+#hubi-pet.eating .prop-fish {
+    opacity: 1;
+    bottom: -5px;
+    left: -20px;
+}
+
+#hubi-pet.chasing .prop-toy {
+    opacity: 1;
+    bottom: 5px;
+    left: -35px;
+    animation: rollToy 0.5s linear infinite;
 }
 
 @keyframes floatZzz {
@@ -1039,55 +1073,7 @@ body::before {
     100% { transform: translate(20px, -45px) scale(1.5); opacity: 0; }
 }
 
-/* Chasing Cat */
-.chasing-cat {
-    top: 60px;
-    left: -100px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    animation: chaseWool 15s linear infinite;
-}
-.chasing-cat .wool-ball {
-    font-size: 1.5rem;
-    animation: rollWool 15s linear infinite;
-}
-
-@keyframes chaseWool {
-    0% { transform: translateX(-100px) scaleX(1); }
-    45% { transform: translateX(110vw) scaleX(1); }
-    50% { transform: translateX(110vw) scaleX(-1); }
-    95% { transform: translateX(-100px) scaleX(-1); }
-    100% { transform: translateX(-100px) scaleX(1); }
-}
-
-@keyframes rollWool {
+@keyframes rollToy {
     0% { transform: rotate(0deg); }
-    45% { transform: rotate(1080deg); }
-    50% { transform: rotate(1080deg); }
-    95% { transform: rotate(-1080deg); }
-    100% { transform: rotate(-1080deg); }
+    100% { transform: rotate(-360deg); }
 }
-
-/* Eating Cat */
-.eating-cat {
-    bottom: 220px;
-    left: 20px;
-    display: flex;
-    align-items: flex-end;
-}
-.eating-cat .cat-emoji {
-    animation: bobHead 1.5s ease-in-out infinite;
-    transform-origin: bottom right;
-}
-.eating-cat .fish {
-    font-size: 1.5rem;
-    margin-left: -5px;
-    margin-bottom: -5px;
-}
-
-@keyframes bobHead {
-    0%, 100% { transform: rotate(0deg); }
-    50% { transform: rotate(20deg) translateY(4px); }
-}
-
