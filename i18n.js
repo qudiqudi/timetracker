@@ -113,8 +113,10 @@ const I18n = (() => {
             copied: 'Copied!',
             qrScanNotSupported: 'QR scanning not supported in this browser. Type the phrase manually.',
             csvExported: 'CSV downloaded!',
-            phraseQR: 'Scan this on your other device',
-            dataQR: 'Or scan the data directly',
+            scanToImport: 'Scan this on your other device to import',
+            manualPhraseHint: 'Or enter the 12-word phrase from the export screen',
+            manualDataHint: 'Only needed if QR scan is not available',
+            qrScanned: 'QR scanned!',
             closeCamera: 'Close camera',
         },
 
@@ -227,8 +229,10 @@ const I18n = (() => {
             copied: 'Kopiert!',
             qrScanNotSupported: 'QR-Scan wird in diesem Browser nicht unterstützt. Gib die Phrase manuell ein.',
             csvExported: 'CSV heruntergeladen!',
-            phraseQR: 'Scanne dies auf deinem anderen Gerät',
-            dataQR: 'Oder scanne die Daten direkt',
+            scanToImport: 'Scanne dies auf deinem anderen Gerät zum Importieren',
+            manualPhraseHint: 'Oder gib die 12-Wort-Phrase vom Export-Bildschirm ein',
+            manualDataHint: 'Nur nötig, wenn QR-Scan nicht verfügbar ist',
+            qrScanned: 'QR gescannt!',
             closeCamera: 'Kamera schließen',
         }
     };

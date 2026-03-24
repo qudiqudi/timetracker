@@ -294,12 +294,9 @@ async function renderExportPage(appEl) {
     }
 
     const phraseWords = phrase.split(' ').map(w => `<span class="sync-phrase-word">${w}</span>`).join('');
-    let qrPhrase = '';
-    try { qrPhrase = QR.toSVG(phrase, 200); } catch {}
-    let qrData = '';
-    if (encrypted.length <= 250) {
-        try { qrData = QR.toSVG(encrypted, 200); } catch {}
-    }
+    const combined = phrase + '\n' + encrypted;
+    let qrCombined = '';
+    try { qrCombined = QR.toSVG(combined, 240); } catch {}
 
     appEl.innerHTML = `
         <div class="page">
@@ -307,6 +304,15 @@ async function renderExportPage(appEl) {
                 <h1 class="page-title">${t('exportData')}</h1>
                 <p class="page-subtitle">${t('catPhraseHint')}</p>
             </div>
+
+            ${qrCombined ? `
+            <div class="sync-section">
+                <div class="sync-qr">
+                    ${qrCombined}
+                    <div class="sync-qr-label">${t('scanToImport')}</div>
+                </div>
+            </div>
+            ` : ''}
 
             <div class="sync-section">
                 <div class="sync-label">${t('catPhrase')}</div>
@@ -319,28 +325,13 @@ async function renderExportPage(appEl) {
             </div>
 
             <div class="sync-section">
-                <div class="sync-qr">
-                    ${qrPhrase}
-                    <div class="sync-qr-label">${t('phraseQR')}</div>
-                </div>
-            </div>
-
-            <div class="sync-section">
                 <div class="sync-label">${t('encryptedData')}</div>
                 <textarea class="sync-data-area" readonly id="encrypted-data">${encrypted}</textarea>
                 <div class="sync-btn-row">
                     <button class="btn btn-secondary" id="copy-data">${t('copyData')}</button>
                 </div>
+                <p class="sync-hint">${t('manualDataHint')}</p>
             </div>
-
-            ${qrData ? `
-            <div class="sync-section">
-                <div class="sync-qr">
-                    ${qrData}
-                    <div class="sync-qr-label">${t('dataQR')}</div>
-                </div>
-            </div>
-            ` : ''}
 
             <button class="btn btn-secondary" id="export-back">
                 <span class="btn-icon">←</span>
@@ -359,6 +350,9 @@ async function renderExportPage(appEl) {
 }
 
 function renderImportPage(appEl) {
+    // Hidden state — filled by QR scan or manual phrase entry
+    let scannedData = '';
+
     appEl.innerHTML = `
         <div class="page">
             <div class="page-header">
@@ -367,12 +361,8 @@ function renderImportPage(appEl) {
             </div>
 
             <div class="sync-section">
-                <div class="sync-label">${t('catPhrase')}</div>
-                <input class="sync-input" type="text" id="import-phrase"
-                    placeholder="${t('phrasePlaceholder')}"
-                    autocomplete="off" autocapitalize="none" spellcheck="false">
                 <div class="sync-btn-row">
-                    <button class="btn btn-secondary" id="scan-qr">
+                    <button class="btn btn-start" id="scan-qr">
                         <span class="btn-icon">📷</span>
                         ${t('scanQR')}
                     </button>
@@ -380,14 +370,17 @@ function renderImportPage(appEl) {
             </div>
 
             <div class="sync-section">
+                <div class="sync-label">${t('catPhrase')}</div>
+                <input class="sync-input" type="text" id="import-phrase"
+                    placeholder="${t('phrasePlaceholder')}"
+                    autocomplete="off" autocapitalize="none" spellcheck="false">
+                <p class="sync-hint">${t('manualPhraseHint')}</p>
+            </div>
+
+            <div class="sync-section">
                 <div class="sync-label">${t('encryptedData')}</div>
                 <textarea class="sync-data-area" id="import-data" placeholder="${t('pasteData')}"></textarea>
-                <div class="sync-btn-row">
-                    <button class="btn btn-secondary" id="scan-data-qr">
-                        <span class="btn-icon">📷</span>
-                        ${t('scanQR')}
-                    </button>
-                </div>
+                <p class="sync-hint">${t('manualDataHint')}</p>
             </div>
 
             <div class="actions">
@@ -405,20 +398,21 @@ function renderImportPage(appEl) {
 
     document.getElementById('scan-qr').addEventListener('click', () => {
         openScanner(value => {
-            document.getElementById('import-phrase').value = value;
-        });
-    });
-
-    document.getElementById('scan-data-qr').addEventListener('click', () => {
-        openScanner(value => {
-            document.getElementById('import-data').value = value;
+            const nl = value.indexOf('\n');
+            if (nl !== -1 && value.substring(nl + 1).startsWith(DATA_PREFIX)) {
+                document.getElementById('import-phrase').value = value.substring(0, nl);
+                scannedData = value.substring(nl + 1);
+                showToast(t('qrScanned'));
+            } else {
+                document.getElementById('import-phrase').value = value;
+            }
         });
     });
 
     document.getElementById('do-import').addEventListener('click', async () => {
         const rawPhrase = document.getElementById('import-phrase').value.trim().toLowerCase();
         const phrase = rawPhrase.split(/\s+/).join(' ');
-        const data = document.getElementById('import-data').value.replace(/\s/g, '');
+        const data = scannedData || document.getElementById('import-data').value.replace(/\s/g, '');
 
         console.log('[sync] phrase words:', phrase.split(' ').length, '| data length:', data.length, '| data prefix:', data.substring(0, 10));
 
