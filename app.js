@@ -173,6 +173,9 @@ function renderPage() {
         case 'stats':
             renderStatsPage();
             break;
+        case 'sync':
+            Sync.renderSyncPage(appEl);
+            break;
     }
 }
 

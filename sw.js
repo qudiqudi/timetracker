@@ -1,11 +1,13 @@
-const CACHE_NAME = 'hubi-tracker-v16';
+const CACHE_NAME = 'hubi-tracker-v17';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './styles.css',
     './pet.css',
     './i18n.js',
+    './qr.js',
     './app.js',
+    './sync.js',
     './pet.js',
     './manifest.json',
     './assets/hubi.png',
