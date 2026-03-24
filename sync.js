@@ -408,19 +408,22 @@ function renderImportPage(appEl) {
         const phrase = rawPhrase.split(/\s+/).join(' ');
         const data = document.getElementById('import-data').value.trim();
 
+        console.log('[sync] phrase words:', phrase.split(' ').length, '| data length:', data.length, '| data prefix:', data.substring(0, 10));
+
         if (!validatePhrase(phrase)) {
             showToast(t('invalidPhrase'));
             return;
         }
         if (!data) {
-            showToast(t('decryptFailed'));
+            showToast('No data pasted');
             return;
         }
 
         let decrypted;
         try {
             decrypted = await decryptData(data, phrase);
-        } catch {
+        } catch (e) {
+            console.error('[sync] decrypt error:', e);
             showToast(t('decryptFailed'));
             return;
         }
@@ -428,8 +431,9 @@ function renderImportPage(appEl) {
         let incoming;
         try {
             incoming = JSON.parse(decrypted);
-            if (!Array.isArray(incoming)) throw new Error();
-        } catch {
+            if (!Array.isArray(incoming)) throw new Error('not an array');
+        } catch (e) {
+            console.error('[sync] parse error:', e);
             showToast(t('decryptFailed'));
             return;
         }
