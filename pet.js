@@ -199,9 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
         maxY() {
             if (this.isNarrow()) {
                 const zone = document.getElementById('hubi-zone');
+                const nav = document.getElementById('bottom-nav');
                 if (zone) {
                     const r = zone.getBoundingClientRect();
-                    return r.bottom + window.scrollY - 80;
+                    const navHeight = nav ? nav.getBoundingClientRect().height : 80;
+                    return r.bottom + window.scrollY - navHeight - 80;
                 }
             }
             // Stay above the bottom nav (roughly bottom 80px) with some margin
@@ -256,12 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!zone) return { x: window.innerWidth / 2, y: window.innerHeight };
 
             const r = zone.getBoundingClientRect();
+            const nav = document.getElementById('bottom-nav');
+            const navHeight = nav ? nav.getBoundingClientRect().height : 80;
             const scrollY = window.scrollY;
             const catSize = 60;
             const margin = 10;
 
             const zoneTop = r.top + scrollY + margin;
-            const zoneBottom = r.bottom + scrollY - catSize - margin;
+            const zoneBottom = r.bottom + scrollY - navHeight - catSize - margin;
             const zoneLeft = margin;
             const zoneRight = window.innerWidth - catSize - margin;
 
