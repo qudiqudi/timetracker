@@ -398,14 +398,27 @@ function renderImportPage(appEl) {
 
     document.getElementById('scan-qr').addEventListener('click', () => {
         openScanner(value => {
-            console.log('[sync] scanned value length:', value.length, '| has pipe:', value.includes('|'), '| has HUBI1:', value.includes(DATA_PREFIX));
+            console.log('[sync] scanned raw:', JSON.stringify(value.substring(0, 120)));
             const sep = value.indexOf('|' + DATA_PREFIX);
             if (sep !== -1) {
                 document.getElementById('import-phrase').value = value.substring(0, sep);
-                scannedData = value.substring(sep + 1);
+                const data = value.substring(sep + 1);
+                scannedData = data;
+                document.getElementById('import-data').value = data;
                 showToast(t('qrScanned'));
             } else {
-                document.getElementById('import-phrase').value = value;
+                // Try newline separator too (older QR codes)
+                const nl = value.indexOf('\n');
+                if (nl !== -1 && value.substring(nl + 1).startsWith(DATA_PREFIX)) {
+                    document.getElementById('import-phrase').value = value.substring(0, nl);
+                    const data = value.substring(nl + 1);
+                    scannedData = data;
+                    document.getElementById('import-data').value = data;
+                    showToast(t('qrScanned'));
+                } else {
+                    document.getElementById('import-phrase').value = value;
+                    console.log('[sync] no data found in QR — phrase only');
+                }
             }
         });
     });

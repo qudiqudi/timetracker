@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hubi-tracker-v24';
+const CACHE_NAME = 'hubi-tracker-v25';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
