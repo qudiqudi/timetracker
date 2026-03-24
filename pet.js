@@ -67,10 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
             this.container.style.transitionDuration = `${transitionTimeMs}ms`;
             this.container.style.transform = `translate(${this.x}px, ${this.y}px)`;
             
-            // Flip the sprite immediately via CSS (avoids slow folding)
+            // Flip the sprite immediately via independent scale property (avoids folding & CSS conflict)
             const flip = this.direction > 0 ? -1 : 1;
             if (this.sprite) {
-                this.sprite.style.transform = `scaleX(${flip})`;
+                this.sprite.style.scale = `${flip} 1`;
             }
         }
 

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.hubi-cat {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: inline-block;
+    --cat-main: #FF8C42;
+    --cat-face: transparent;
+    transform-origin: center bottom;
+    transition: transform 0.3s;
+    background: rgba(0,0,0,0.1);
+}
+.cat-body {
+    position: absolute; bottom: 10px; left: 15px; width: 50px; height: 30px; background: var(--cat-main);
+}
+.cat-head {
+    position: absolute; bottom: 15px; left: -10px; width: 38px; height: 36px; background: blue;
+}
+.cat-tail {
+    position: absolute; bottom: 20px; right: 5px; width: 35px; height: 10px; background: red;
+}
+</style>
+</head>
+<body>
+<p>Default (ScaleX 1)</p>
+<div class="hubi-cat" style="transform: scaleX(1)">
+  <div class="cat-tail"></div>
+  <div class="cat-body">
+    <div class="cat-head"></div>
+  </div>
+</div>
+<p>Moving Right (ScaleX -1)</p>
+<div class="hubi-cat" style="transform: scaleX(-1)">
+  <div class="cat-tail"></div>
+  <div class="cat-body">
+    <div class="cat-head"></div>
+  </div>
+</div>
+</body>
+</html>
