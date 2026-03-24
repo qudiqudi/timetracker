@@ -62,6 +62,19 @@ async function deriveKey(phrase) {
     );
 }
 
+function bytesToBase64(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+}
+
+function base64ToBytes(b64) {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+}
+
 async function encryptData(text, phrase) {
     const key = await deriveKey(phrase);
     const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -73,13 +86,13 @@ async function encryptData(text, phrase) {
     const combined = new Uint8Array(iv.length + ciphertext.byteLength);
     combined.set(iv);
     combined.set(new Uint8Array(ciphertext), iv.length);
-    return DATA_PREFIX + btoa(String.fromCharCode(...combined));
+    return DATA_PREFIX + bytesToBase64(combined);
 }
 
 async function decryptData(blob, phrase) {
     if (!blob.startsWith(DATA_PREFIX)) throw new Error('Invalid data format');
     const raw = blob.slice(DATA_PREFIX.length);
-    const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+    const bytes = base64ToBytes(raw);
     const iv = bytes.slice(0, 12);
     const ciphertext = bytes.slice(12);
     const key = await deriveKey(phrase);
@@ -396,7 +409,7 @@ function renderImportPage(appEl) {
             return;
         }
         if (!data) {
-            showToast(t('invalidPhrase'));
+            showToast(t('decryptFailed'));
             return;
         }
 
