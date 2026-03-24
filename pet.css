@@ -89,8 +89,20 @@
     left: 4px;
     width: 30px;
     height: 20px;
-    background: var(--cat-face);
+    background: transparent;
     border-radius: 50% 50% 45% 45%;
+}
+
+/* Chest (white patch) */
+.cat-chest {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    width: 22px;
+    height: 18px;
+    background: var(--cream, #FFF5E6);
+    border-radius: 50% 50% 40% 40%;
+    z-index: 2;
 }
 
 /* Ears */
@@ -241,9 +253,9 @@
 
 @keyframes leg-swing {
     0% { transform: rotate(0deg); }
-    25% { transform: rotate(25deg); }
+    25% { transform: rotate(35deg); }
     50% { transform: rotate(0deg); }
-    75% { transform: rotate(-25deg); }
+    75% { transform: rotate(-35deg); }
     100% { transform: rotate(0deg); }
 }
 
@@ -258,8 +270,8 @@
 }
 
 @keyframes tail-walk {
-    0%, 100% { transform: rotate(-25deg); }
-    50% { transform: rotate(-45deg); }
+    0%, 100% { transform: rotate(-20deg); }
+    50% { transform: rotate(-50deg); }
 }
 
 /* --- ANIMATION: CHASING --- */

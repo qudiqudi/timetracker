@@ -126,6 +126,7 @@ window.getHubiCatHTML = function(classes = '', id = 'mascot') {
                         <div class="cat-whiskers right"></div>
                     </div>
                 </div>
+                <div class="cat-chest"></div>
             </div>
         </div>
     `;

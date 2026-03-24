@@ -65,11 +65,13 @@ document.addEventListener('DOMContentLoaded', () => {
             this.y = Math.max(10, Math.min(this.y, boundsY));
 
             this.container.style.transitionDuration = `${transitionTimeMs}ms`;
+            this.container.style.transform = `translate(${this.x}px, ${this.y}px)`;
             
-            // ScaleX(-1) if direction is positive (moving right), because image defaults facing left slightly.
+            // Flip the sprite immediately via CSS (avoids slow folding)
             const flip = this.direction > 0 ? -1 : 1;
-            
-            this.container.style.transform = `translate(${this.x}px, ${this.y}px) scaleX(${flip})`;
+            if (this.sprite) {
+                this.sprite.style.transform = `scaleX(${flip})`;
+            }
         }
 
         decideNextAction() {
