@@ -1,0 +1,329 @@
+/* ============================================
+   HUBI TIME TRACKER — CSS Cat Animations
+   ============================================ */
+
+/* --- Base Cat Container --- */
+.hubi-cat {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: inline-block;
+    --cat-main: var(--orange-primary, #FF8C42);
+    --cat-dark: var(--orange-glow, #FF6B1A);
+    --cat-light: var(--orange-light, #FFD4A3);
+    --cat-face: var(--cream, #FFF5E6);
+    --cat-lines: var(--chocolate, #3D2914);
+    
+    /* Center baseline */
+    margin: 0 auto;
+    transform-origin: center bottom;
+    transition: transform 0.3s;
+}
+
+/* Scaling utility if needed */
+.hubi-cat.sm { transform: scale(0.6); }
+.hubi-cat.lg { transform: scale(1.2); }
+
+/* --- Cat Body Parts --- */
+.cat-body {
+    position: absolute;
+    bottom: 10px;
+    left: 15px;
+    width: 50px;
+    height: 30px;
+    background: var(--cat-main);
+    border-radius: 40px;
+    box-shadow: inset -5px -5px 0 0 rgba(0,0,0,0.05);
+    z-index: 2;
+    transform-origin: center;
+}
+
+/* --- Tail --- */
+.cat-tail {
+    position: absolute;
+    bottom: 20px;
+    right: 5px;
+    width: 35px;
+    height: 10px;
+    background: var(--cat-main);
+    border-radius: 10px;
+    transform-origin: left center;
+    transform: rotate(-30deg);
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* Striping on tail */
+.cat-tail::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 5px,
+        var(--cat-dark) 5px,
+        var(--cat-dark) 10px
+    );
+    opacity: 0.3;
+}
+
+/* --- Head --- */
+.cat-head {
+    position: absolute;
+    bottom: 15px;
+    left: -10px;
+    width: 38px;
+    height: 36px;
+    background: var(--cat-main);
+    border-radius: 50% 50% 45% 45%;
+    z-index: 3;
+    transform-origin: center bottom;
+    box-shadow: inset -2px -4px 0 0 rgba(0,0,0,0.05);
+}
+
+/* Face area (white/cream part) */
+.cat-face {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    width: 30px;
+    height: 20px;
+    background: var(--cat-face);
+    border-radius: 50% 50% 45% 45%;
+}
+
+/* Ears */
+.cat-ear {
+    position: absolute;
+    top: -8px;
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-bottom: 16px solid var(--cat-main);
+    z-index: -1;
+}
+
+.cat-ear::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: -4px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 8px solid var(--cat-light);
+}
+
+.cat-ear.left {
+    left: 2px;
+    transform: rotate(-20deg);
+}
+
+.cat-ear.right {
+    right: 2px;
+    transform: rotate(20deg);
+}
+
+/* Eyes */
+.cat-eye {
+    position: absolute;
+    top: 4px;
+    width: 5px;
+    height: 5px;
+    background: var(--cat-lines);
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+.cat-eye.left { left: 6px; }
+.cat-eye.right { right: 6px; }
+
+/* Nose */
+.cat-nose {
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 4px;
+    background: var(--cat-light);
+    border-radius: 50%;
+}
+
+/* Mouth */
+.cat-mouth {
+    position: absolute;
+    top: 13px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 4px;
+    border-bottom: 2px solid var(--cat-lines);
+    border-left: 1px solid transparent;
+    border-right: 1px solid transparent;
+    border-radius: 0 0 50% 50%;
+}
+
+/* Whiskers */
+.cat-whiskers {
+    position: absolute;
+    top: 10px;
+    width: 8px;
+    height: 1px;
+    background: var(--cat-lines);
+    opacity: 0.3;
+}
+.cat-whiskers::before, .cat-whiskers::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 1px;
+    background: var(--cat-lines);
+}
+.cat-whiskers::before { top: -4px; transform: rotate(10deg); }
+.cat-whiskers::after { top: 4px; transform: rotate(-10deg); }
+.cat-whiskers.left { left: -6px; transform: rotate(5deg); }
+.cat-whiskers.right { right: -6px; transform: rotate(-5deg) scaleX(-1); }
+
+/* --- Legs --- */
+.cat-leg {
+    position: absolute;
+    bottom: -10px;
+    width: 10px;
+    height: 18px;
+    background: var(--cat-main);
+    border-radius: 5px;
+    transform-origin: top center;
+    z-index: 1;
+}
+
+/* Slight shading for back legs */
+.cat-leg.back { background: var(--cat-dark); z-index: 0; }
+.cat-leg.front { background: var(--cat-main); box-shadow: inset -1px -2px 0 0 rgba(0,0,0,0.05); }
+
+/* Leg placements */
+.cat-leg.back.left { left: 8px; }
+.cat-leg.front.left { left: 14px; }
+.cat-leg.back.right { left: 30px; }
+.cat-leg.front.right { left: 36px; }
+
+
+/* ============================================
+   ANIMATION STATES
+   ============================================ */
+
+/* --- ANIMATION: IDLE --- */
+.idle .cat-tail {
+    animation: tail-idle 3s ease-in-out infinite;
+}
+.idle .cat-eye, .working .cat-eye {
+    animation: blink 4s infinite;
+}
+
+@keyframes tail-idle {
+    0%, 100% { transform: rotate(-30deg); }
+    50% { transform: rotate(-20deg); }
+}
+
+@keyframes blink {
+    0%, 96%, 100% { height: 5px; top: 4px; }
+    98% { height: 1px; top: 6px; }
+}
+
+/* --- ANIMATION: WALKING --- */
+.walking .cat-leg.front.left { animation: leg-swing 0.8s infinite linear; }
+.walking .cat-leg.front.right { animation: leg-swing 0.8s infinite linear 0.4s; }
+.walking .cat-leg.back.left { animation: leg-swing 0.8s infinite linear 0.4s; }
+.walking .cat-leg.back.right { animation: leg-swing 0.8s infinite linear; }
+.walking .cat-body { animation: body-bob 0.4s infinite alternate ease-in-out; }
+.walking .cat-head { animation: head-bob 0.4s infinite alternate ease-in-out; }
+.walking .cat-tail { animation: tail-walk 0.8s infinite ease-in-out; }
+
+@keyframes leg-swing {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(25deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(-25deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@keyframes body-bob {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-3px); }
+}
+
+@keyframes head-bob {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(2px); }
+}
+
+@keyframes tail-walk {
+    0%, 100% { transform: rotate(-25deg); }
+    50% { transform: rotate(-45deg); }
+}
+
+/* --- ANIMATION: CHASING --- */
+.chasing .cat-leg.front.left { animation: leg-swing 0.3s infinite linear; }
+.chasing .cat-leg.front.right { animation: leg-swing 0.3s infinite linear 0.15s; }
+.chasing .cat-leg.back.left { animation: leg-swing 0.3s infinite linear 0.15s; }
+.chasing .cat-leg.back.right { animation: leg-swing 0.3s infinite linear; }
+.chasing .cat-body { animation: body-bob 0.15s infinite alternate ease-in-out; }
+.chasing .cat-tail { transform: rotate(0deg); }
+.chasing .cat-ear { transform: rotate(-50deg); }
+.chasing .cat-eye { height: 8px; width: 8px; border-radius: 50%; top: 2px; }
+
+/* --- ANIMATION: SLEEPING / ON-BREAK --- */
+.sleeping .cat-body, .on-break .cat-body {
+    transform: scaleX(1.05) scaleY(0.9);
+    animation: breathing 3s infinite ease-in-out;
+}
+
+.sleeping .cat-head, .on-break .cat-head {
+    transform: translateY(12px) rotate(15deg);
+}
+
+.sleeping .cat-eye, .on-break .cat-eye {
+    height: 1px;
+    top: 8px;
+    background: var(--cat-dark);
+}
+
+.sleeping .cat-tail, .on-break .cat-tail {
+    transform: rotate(-160deg) translateX(5px) translateY(-5px);
+    z-index: 5;
+}
+
+.sleeping .cat-leg, .on-break .cat-leg {
+    transform: rotate(70deg) translateY(-8px);
+}
+
+@keyframes breathing {
+    0%, 100% { transform: scaleX(1.05) scaleY(0.9) translateY(0); }
+    50% { transform: scaleX(1.08) scaleY(0.95) translateY(-2px); }
+}
+
+/* --- ANIMATION: EATING --- */
+.eating .cat-head {
+    animation: eating-head 0.8s infinite ease-in-out;
+}
+.eating .cat-tail {
+    animation: eating-tail 2s infinite ease-in-out;
+}
+
+@keyframes eating-head {
+    0%, 100% { transform: translateY(10px) rotate(5deg); }
+    50% { transform: translateY(15px) rotate(15deg); }
+}
+
+@keyframes eating-tail {
+    0%, 100% { transform: rotate(-10deg); }
+    50% { transform: rotate(-30deg); }
+}
+
+/* --- WORKING BOUNCE --- */
+.working .cat-body {
+    animation: body-bob 1s infinite alternate ease-in-out;
+}
+.working .cat-tail {
+    animation: tail-idle 2s infinite ease-in-out;
+}

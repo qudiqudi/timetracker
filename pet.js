@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="pet-prop prop-zzz" aria-hidden="true">💤</span>
                 <span class="pet-prop prop-fish" aria-hidden="true">🐟</span>
                 <span class="pet-prop prop-toy" aria-hidden="true">🧶</span>
-                <img src="assets/hubi.png" id="hubi-pet-sprite" alt="Hubi Pet" aria-hidden="true">
+                ${window.getHubiCatHTML('', 'hubi-pet-sprite')}
             `;
             
             document.body.appendChild(this.container);

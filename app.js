@@ -105,6 +105,32 @@ function getDayLabel(dateStr) {
     return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' });
 }
 
+window.getHubiCatHTML = function(classes = '', id = 'mascot') {
+    return `
+        <div class="hubi-cat ${classes}" id="${id}">
+            <div class="cat-tail"></div>
+            <div class="cat-body">
+                <div class="cat-leg back left"></div>
+                <div class="cat-leg front left"></div>
+                <div class="cat-leg back right"></div>
+                <div class="cat-leg front right"></div>
+                <div class="cat-head">
+                    <div class="cat-ear left"></div>
+                    <div class="cat-ear right"></div>
+                    <div class="cat-face">
+                        <div class="cat-eye left"></div>
+                        <div class="cat-eye right"></div>
+                        <div class="cat-nose"></div>
+                        <div class="cat-mouth"></div>
+                        <div class="cat-whiskers left"></div>
+                        <div class="cat-whiskers right"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
 // ---- App State ----
 let currentPage = 'timer';
 let timerInterval = null;
@@ -165,7 +191,7 @@ function renderIdlePage() {
         <div class="page">
             <div class="page-header">
                 <div class="mascot-container">
-                    <img src="assets/hubi.png" alt="Hubi the cat" class="mascot-img" id="mascot">
+                    ${window.getHubiCatHTML('idle')}
                     <span class="mascot-status">😴</span>
                 </div>
                 <h1 class="page-title">Ready to work?</h1>
@@ -202,7 +228,7 @@ function renderActivePage() {
         <div class="page">
             <div class="page-header">
                 <div class="mascot-container">
-                    <img src="assets/hubi.png" alt="Hubi the cat" class="mascot-img ${mascotClass}" id="mascot">
+                    ${window.getHubiCatHTML(mascotClass)}
                     <span class="mascot-status">${statusEmoji}</span>
                 </div>
                 <h1 class="page-title">${statusText}</h1>
@@ -437,7 +463,7 @@ function renderHistoryPage() {
         <div class="page">
             <div class="page-header">
                 <div class="mascot-container">
-                    <img src="assets/hubi.png" alt="Hubi" class="mascot-img" style="width:64px;height:64px;">
+                    ${window.getHubiCatHTML('idle sm', 'history-mascot')}
                 </div>
                 <h1 class="page-title">History</h1>
                 <p class="page-subtitle">Your tracked sessions</p>
@@ -563,7 +589,7 @@ function renderStatsPage() {
         <div class="page">
             <div class="page-header">
                 <div class="mascot-container">
-                    <img src="assets/hubi.png" alt="Hubi" class="mascot-img" style="width:64px;height:64px;">
+                    ${window.getHubiCatHTML('idle sm', 'stats-mascot')}
                 </div>
                 <h1 class="page-title">Statistics</h1>
                 <p class="page-subtitle">How's your productivity?</p>
@@ -576,7 +602,9 @@ function renderStatsPage() {
             </div>
 
             <div class="hubi-insight">
-                <img src="assets/hubi.png" alt="Hubi" class="hubi-insight-img">
+                <div class="hubi-insight-img-wrapper" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; transform: scale(0.6); margin-left: -10px;">
+                    ${window.getHubiCatHTML('idle', 'insight-mascot')}
+                </div>
                 <div class="hubi-insight-text">${insight}</div>
             </div>
 
