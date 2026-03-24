@@ -82,17 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         startFromMascot() {
-            // On narrow screens, start directly in the hubi zone
-            if (this.isNarrow()) {
-                const target = this.findSafeTarget();
-                this.x = target.x;
-                this.y = target.y;
-                this.updateTransform(0);
-                this.setState(STATES.SITTING);
-                setTimeout(() => this.decideNextAction(), 2000);
-                return;
-            }
-
             // Find the slot reserved for the mascot in the header
             const slot = document.getElementById('mascot-slot');
             if (!slot) {
@@ -106,16 +95,45 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Position the pet in the mascot slot
+            // On mobile (absolute positioning) we need document-relative coords
             const rect = slot.getBoundingClientRect();
+            const scrollY = this.isNarrow() ? window.scrollY : 0;
             this.x = rect.left + rect.width / 2 - 30;
-            this.y = rect.top;
+            this.y = rect.top + scrollY;
 
             this.container.classList.add(STATES.SITTING);
             this.container.style.transition = 'none';
             this.container.style.transform = `translate(${this.x}px, ${this.y}px)`;
 
-            // Sit with active tail, then jump down
-            setTimeout(() => this.jumpDown(), 3000);
+            // Sit with active tail, then head to safe area
+            if (this.isNarrow()) {
+                // On mobile, walk down to the hubi zone instead of jumping
+                setTimeout(() => this.walkToZone(), 3000);
+            } else {
+                setTimeout(() => this.jumpDown(), 3000);
+            }
+        }
+
+        walkToZone() {
+            this.setState(STATES.WALKING);
+
+            const target = this.findMobileTarget();
+            const dx = target.x - this.x;
+            const dy = target.y - this.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            this.direction = dx >= 0 ? 1 : -1;
+            const duration = (distance / this.speed) * 1000;
+
+            this.x = target.x;
+            this.y = target.y;
+            this.updateTransform(duration);
+
+            setTimeout(() => {
+                if (this.state === STATES.WALKING) {
+                    this.transitionToIdle();
+                }
+            }, duration);
         }
 
         jumpDown() {
