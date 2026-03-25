@@ -614,8 +614,6 @@ function renderStatsPage() {
             </div>
 
             <div class="hubi-insight">
-                <div class="hubi-insight-img-wrapper" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; margin-left: -10px;">
-                </div>
                 <div class="hubi-insight-text">${insight}</div>
             </div>
 
