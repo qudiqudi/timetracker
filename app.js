@@ -726,9 +726,14 @@ function getHubiInsight(totalWorkMs, daysWorked, period) {
     return t('insightAll')(h, daysWorked);
 }
 
+// ---- Treat notification ----
+window.addEventListener('hubi-treat-unlocked', () => {
+    showToast(t('toastTreat'), 8000);
+});
+
 // ---- Toast ----
 let toastTimeout = null;
-function showToast(message) {
+function showToast(message, duration = 2500) {
     // Remove existing toast
     const existing = document.querySelector('.toast');
     if (existing) existing.remove();
@@ -746,7 +751,7 @@ function showToast(message) {
     toastTimeout = setTimeout(() => {
         toast.classList.remove('visible');
         setTimeout(() => toast.remove(), 400);
-    }, 2500);
+    }, duration);
 }
 
 // ---- Dialog ----

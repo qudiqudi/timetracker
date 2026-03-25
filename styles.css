@@ -1112,7 +1112,7 @@ body::before {
     opacity: 1;
     bottom: -15px;
     left: -10px;
-    font-size: 3.5rem;
+    font-size: 3.6rem;
     z-index: 5;
 }
 
@@ -1126,11 +1126,12 @@ body::before {
 
 #hubi-pet.productive .prop-glasses {
     opacity: 1;
-    bottom: 25px;
-    left: -10px;
-    font-size: 0.9rem;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%) scaleX(1.4);
+    font-size: 1.3rem;
     z-index: 10;
-    animation: productive-head 2s ease-in-out infinite;
 }
 
 @keyframes butterflyFlight {
@@ -1147,6 +1148,108 @@ body::before {
 }
 
 /* Removed productiveJitter — typing paws handle the motion */
+
+/* --- Treat Elements --- */
+.treat-tray {
+    position: fixed;
+    width: 50px;
+    height: 18px;
+    background: linear-gradient(to bottom, #b0b0b0, #888);
+    border-radius: 0 0 12px 12px;
+    border: 2px solid #999;
+    border-top: none;
+    z-index: 9998;
+    animation: treat-appear 0.4s ease-out;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.treat-box {
+    position: fixed;
+    width: 42px;
+    height: 48px;
+    background: linear-gradient(135deg, #e8a44a, #d4893a);
+    border-radius: 4px;
+    border: 2px solid #c07830;
+    z-index: 9999;
+    cursor: pointer;
+    animation: treat-box-pulse 1.2s ease-in-out infinite, treat-appear 0.4s ease-out;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 3px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    transition: transform 0.4s ease;
+}
+
+.treat-box::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+}
+
+.treat-box-label {
+    font-family: var(--font-family, sans-serif);
+    font-size: 8px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+}
+
+.treat-box.pouring {
+    transform: rotate(-35deg);
+    animation: none;
+    cursor: default;
+}
+
+.treat-particle {
+    position: fixed;
+    width: 7px;
+    height: 7px;
+    background: #8B6914;
+    border-radius: 50%;
+    z-index: 9999;
+    animation: treat-fall 0.7s ease-in forwards;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.treat-heart {
+    position: fixed;
+    color: #ff4466;
+    font-size: 1.2rem;
+    z-index: 9999;
+    animation: treat-heart-float 1.8s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes treat-appear {
+    from { opacity: 0; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes treat-box-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+@keyframes treat-fall {
+    0% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(55px) translateX(var(--drift, 3px)); }
+}
+
+@keyframes treat-heart-float {
+    0% { opacity: 0; transform: translateY(0) scale(0.3); }
+    15% { opacity: 1; transform: translateY(-8px) scale(1); }
+    70% { opacity: 0.8; transform: translateY(-30px) scale(1.1); }
+    100% { opacity: 0; transform: translateY(-50px) scale(0.6); }
+}
 
 /* --- Sync Page --- */
 .sync-actions {

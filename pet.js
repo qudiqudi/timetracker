@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
         HUNTING: 'hunting',
         BUTTERFLY: 'butterfly',
         BOX: 'box',
-        PRODUCTIVE: 'productive'
+        PRODUCTIVE: 'productive',
+        TREAT: 'treat'
     };
 
     class HubiPet {
@@ -49,6 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(this.container);
             this.sprite = this.container.querySelector('#hubi-pet-sprite');
 
+            // Move glasses inside cat-head so they follow head animations naturally
+            const glasses = this.container.querySelector('.prop-glasses');
+            const head = this.sprite.querySelector('.cat-head');
+            if (glasses && head) head.appendChild(glasses);
+
             // Meow sounds
             this.meowSounds = [];
             this.loadMeows();
@@ -79,6 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         onPetted() {
+            // Don't interrupt treat sequence
+            if (this.state === STATES.TREAT) return;
+
             // Interrupt current action and react
             this.setState(STATES.PETTED, 1800);
 
@@ -380,6 +389,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         decideNextAction() {
+            // Check if the user earned a treat
+            if (this.checkTreatEligibility()) return;
+
             const rand = Math.random();
 
             // Chances (walk-heavy so the cat feels natural):
@@ -468,6 +480,225 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.speed = 100; // Reset speed
                 this.transitionToIdle();
             }, duration);
+        }
+
+        findTreatSpot() {
+            const minDist = 150;
+            let best = null;
+            let bestDist = 0;
+
+            for (let i = 0; i < 20; i++) {
+                const candidate = this.findSafeTarget();
+                const dx = candidate.x - this.x;
+                const dy = candidate.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist >= minDist) return candidate;
+                if (dist > bestDist) {
+                    best = candidate;
+                    bestDist = dist;
+                }
+            }
+
+            return best || this.findSafeTarget();
+        }
+
+        // --- TREAT SYSTEM ---
+
+        getTodayWorkMs() {
+            const today = todayStr();
+            let total = 0;
+
+            // Completed sessions
+            const sessions = Storage.getSessions();
+            for (const s of sessions) {
+                if (s.date === today) total += s.totalWork;
+            }
+
+            // Active session work so far
+            const active = ActiveState.get();
+            if (active && active.startTime) {
+                const elapsed = Date.now() - active.startTime;
+                let breakMs = 0;
+                if (active.breaks) {
+                    for (const b of active.breaks) {
+                        breakMs += (b.end || Date.now()) - b.start;
+                    }
+                }
+                if (active.currentBreakStart) {
+                    breakMs += Date.now() - active.currentBreakStart;
+                }
+                total += Math.max(0, elapsed - breakMs);
+            }
+
+            return total;
+        }
+
+        checkTreatEligibility() {
+            const today = todayStr();
+            if (localStorage.getItem('hubi_treat_date') === today) return false;
+            if (this.treatPending) return false;
+            if (this.getTodayWorkMs() < 4 * 3600000) return false;
+
+            // If page is hidden, wait until user comes back
+            if (document.hidden) {
+                this.treatPending = true;
+                const onVisible = () => {
+                    if (document.visibilityState === 'visible') {
+                        document.removeEventListener('visibilitychange', onVisible);
+                        this.treatPending = false;
+                        this.startTreatSequence();
+                    }
+                };
+                document.addEventListener('visibilitychange', onVisible);
+                return false;
+            }
+
+            this.startTreatSequence();
+            return true;
+        }
+
+        triggerTreat() {
+            // Public method for dev menu — skip eligibility
+            this.cleanupTreat();
+            this.startTreatSequence();
+        }
+
+        startTreatSequence() {
+            localStorage.setItem('hubi_treat_date', todayStr());
+            this.setState(STATES.TREAT);
+            this.treatPhase = 'waiting';
+
+            // Pick a position for the tray — away from Hubi
+            const target = this.findTreatSpot();
+            this.treatTarget = target;
+
+            // Create tray element
+            this.treatTray = document.createElement('div');
+            this.treatTray.className = 'treat-tray';
+            this.treatTray.style.left = target.x + 'px';
+            this.treatTray.style.top = (target.y + 40) + 'px';
+            if (this.isNarrow()) {
+                this.treatTray.style.position = 'absolute';
+            }
+            document.body.appendChild(this.treatTray);
+
+            // Create treat box above tray
+            this.treatBox = document.createElement('div');
+            this.treatBox.className = 'treat-box';
+            this.treatBox.style.left = (target.x - 5) + 'px';
+            this.treatBox.style.top = (target.y - 70) + 'px';
+            if (this.isNarrow()) {
+                this.treatBox.style.position = 'absolute';
+            }
+            this.treatBox.innerHTML = '<span class="treat-box-label">Treats!</span>';
+            document.body.appendChild(this.treatBox);
+
+            // Click handler on the treat box
+            this.treatBoxHandler = () => this.onTreatBoxClicked();
+            this.treatBox.addEventListener('click', this.treatBoxHandler);
+
+            window.dispatchEvent(new CustomEvent('hubi-treat-unlocked'));
+        }
+
+        onTreatBoxClicked() {
+            if (this.treatPhase !== 'waiting') return;
+            this.treatBox.removeEventListener('click', this.treatBoxHandler);
+
+            // Phase: pouring
+            this.treatPhase = 'pouring';
+            this.treatBox.classList.add('pouring');
+
+            // Spawn treat particles falling into tray
+            const particleCount = 5 + Math.floor(Math.random() * 4);
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'treat-particle';
+                p.style.left = (this.treatTarget.x + 5 + Math.random() * 30) + 'px';
+                p.style.top = (this.treatTarget.y - 10) + 'px';
+                if (this.isNarrow()) {
+                    p.style.position = 'absolute';
+                }
+                p.style.setProperty('--drift', (Math.random() * 10 - 5) + 'px');
+                p.style.animationDelay = (i * 0.1) + 's';
+                document.body.appendChild(p);
+                p.addEventListener('animationend', () => p.remove());
+            }
+
+            // Phase: running to tray
+            setTimeout(() => {
+                this.treatPhase = 'running';
+                this.container.classList.add('treat-run');
+
+                // Excited meow
+                this.playMeow();
+
+                const dx = this.treatTarget.x - this.x;
+                const dy = this.treatTarget.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                this.direction = dx >= 0 ? 1 : -1;
+                const runSpeed = 180;
+                const duration = (distance / runSpeed) * 1000;
+
+                this.x = this.treatTarget.x;
+                this.y = this.treatTarget.y;
+                this.updateTransform(duration);
+
+                // Phase: eating
+                setTimeout(() => {
+                    this.container.classList.remove('treat-run');
+                    this.treatPhase = 'eating';
+                    this.container.classList.add('treat-eat');
+
+                    const eatDuration = 4000 + Math.random() * 1000;
+
+                    // Phase: happy
+                    setTimeout(() => {
+                        this.container.classList.remove('treat-eat');
+                        this.treatPhase = 'happy';
+                        this.container.classList.add('treat-happy');
+
+                        // Spawn hearts
+                        for (let i = 0; i < 3; i++) {
+                            const heart = document.createElement('div');
+                            heart.className = 'treat-heart';
+                            heart.textContent = '\u2764';
+                            heart.style.left = (this.x + 10 + i * 15) + 'px';
+                            heart.style.top = (this.y - 10) + 'px';
+                            if (this.isNarrow()) {
+                                heart.style.position = 'absolute';
+                            }
+                            heart.style.animationDelay = (i * 0.3) + 's';
+                            document.body.appendChild(heart);
+                            heart.addEventListener('animationend', () => heart.remove());
+                        }
+
+                        // Phase: sleep
+                        setTimeout(() => {
+                            this.container.classList.remove('treat-happy');
+                            this.cleanupTreat();
+
+                            // Transition to sleeping
+                            this.container.classList.remove(STATES.TREAT);
+                            this.state = STATES.SLEEPING;
+                            this.container.classList.add(STATES.SLEEPING);
+
+                            setTimeout(() => {
+                                if (this.state === STATES.SLEEPING) {
+                                    this.transitionToIdle();
+                                }
+                            }, 8000 + Math.random() * 2000);
+                        }, 2000);
+                    }, eatDuration);
+                }, duration);
+            }, 1200);
+        }
+
+        cleanupTreat() {
+            if (this.treatTray) { this.treatTray.remove(); this.treatTray = null; }
+            if (this.treatBox) { this.treatBox.remove(); this.treatBox = null; }
+            this.container.classList.remove('treat-run', 'treat-eat', 'treat-happy');
+            this.treatPhase = null;
         }
     }
 

@@ -84,6 +84,7 @@ const I18n = (() => {
             toastStartWork: "🐾 Let's get to work!",
             toastBreak: '☕ Break time! Hubi is napping...',
             toastResume: '🐾 Back to work!',
+            toastTreat: '🎉 4 hours done! Hubi earned a treat — click the box!',
 
             // Sync
             navSync: 'Sync',
@@ -201,6 +202,7 @@ const I18n = (() => {
             toastStartWork: '🐾 Auf geht\'s!',
             toastBreak: '☕ Pausenzeit! Hubi macht ein Nickerchen...',
             toastResume: '🐾 Zurück an die Arbeit!',
+            toastTreat: '🎉 4 Stunden geschafft! Hubi hat sich ein Leckerli verdient — klick auf die Box!',
 
             // Sync
             navSync: 'Sync',

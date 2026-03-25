@@ -602,6 +602,9 @@
 .box .cat-tail {
     animation: box-tail 3s ease-in-out infinite 1s;
     transform-origin: 0% 50%;
+    z-index: -1;
+    bottom: 5px;
+    left: 30px;
 }
 .box .cat-eye {
     width: 7px; height: 7px;
@@ -617,8 +620,8 @@
     50% { transform: translateY(3px) rotate(-3deg); }
 }
 @keyframes box-tail {
-    0%, 100% { transform: rotate(-10deg) translateY(10px); }
-    50% { transform: rotate(-30deg) translateY(8px); }
+    0%, 100% { transform: rotate(-120deg) translateY(5px); }
+    50% { transform: rotate(-150deg) translateY(3px); }
 }
 
 /* --- ANIMATION: PRODUCTIVE --- */
@@ -648,4 +651,52 @@
 @keyframes typing-r {
     from { transform: rotate(0); }
     to { transform: rotate(-12deg) translateY(-3px); }
+}
+
+/* --- ANIMATION: TREAT --- */
+/* Base treat state — alert, excited posture */
+.treat .cat-eye {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    top: 2px;
+}
+.treat .cat-ear.left { transform: rotate(-10deg) translateY(-2px); }
+.treat .cat-ear.right { transform: rotate(10deg) translateY(-2px); }
+.treat .cat-tail {
+    animation: tail-happy 0.6s ease-in-out infinite;
+}
+
+/* Running to tray — fast legs like chasing */
+.treat-run .cat-leg.front.left { animation: leg-swing 0.3s infinite linear; }
+.treat-run .cat-leg.front.right { animation: leg-swing 0.3s infinite linear 0.15s; }
+.treat-run .cat-leg.back.left { animation: leg-swing 0.3s infinite linear 0.15s; }
+.treat-run .cat-leg.back.right { animation: leg-swing 0.3s infinite linear; }
+.treat-run .cat-body { animation: body-bob 0.15s infinite alternate ease-in-out; }
+
+/* Eating at the tray */
+.treat-eat .cat-head {
+    animation: eating-head 0.8s infinite ease-in-out;
+}
+.treat-eat .cat-tail {
+    animation: eating-tail 2s ease-in-out infinite;
+}
+.treat-eat .cat-eye {
+    height: 3px;
+    top: 6px;
+}
+
+/* Happy after eating */
+.treat-happy .cat-body {
+    animation: purr-squish 0.3s ease-in-out infinite alternate;
+}
+.treat-happy .cat-head {
+    animation: head-nuzzle 0.5s ease-in-out infinite alternate;
+}
+.treat-happy .cat-eye {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    top: 2px;
+}
+.treat-happy .cat-tail {
+    animation: tail-happy 0.4s ease-in-out infinite;
 }
