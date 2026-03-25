@@ -446,6 +446,7 @@ body::before {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
+    padding-right: 30px; /* Space for the absolute delete button */
 }
 
 .card-title {
