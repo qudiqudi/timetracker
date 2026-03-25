@@ -54,6 +54,10 @@ function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+function escapeAttr(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function formatDuration(ms) {
     if (ms < 0) ms = 0;
     const totalSeconds = Math.floor(ms / 1000);
@@ -531,7 +535,7 @@ function renderEmptyHistory() {
 function renderSessionCard(session) {
     return `
         <div class="card">
-            <button class="card-delete" data-id="${session.id}" title="${t('delete')}">✕</button>
+            <button class="card-delete" data-id="${escapeAttr(session.id)}" title="${t('delete')}">✕</button>
             <div class="card-header">
                 <div class="card-title">${formatDate(session.date)}</div>
                 <div class="card-date">${formatTime(session.startTime)} – ${formatTime(session.endTime)}</div>
@@ -747,6 +751,8 @@ function showToast(message) {
 
 // ---- Dialog ----
 function showDialog(emoji, title, text, confirmLabel, cancelLabel, onConfirm) {
+    const existing = document.querySelector('.dialog-overlay');
+    if (existing) return;
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay';
     overlay.innerHTML = `

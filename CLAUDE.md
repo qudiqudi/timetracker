@@ -22,7 +22,7 @@ Pushes to `main` auto-deploy to GitHub Pages via `.github/workflows/deploy.yml`.
 - `pet.js` -- `HubiPet` class: a roaming cat sprite that walks, sleeps, eats, and chases toys around the screen. Independent of app logic. On page load the pet starts sitting in the header mascot slot, then jumps down in a parabolic arc. It avoids UI elements by computing safe zones (left/right/below the `#app` content column). The cat is interactive -- clicking/tapping the sprite triggers a "petted" reaction (nuzzle, purr squish, heart float, ears perk up) and has a 50% chance of playing a random meow sound from `assets/meow{1,2,3}.mp3`.
 - `styles.css` -- app styles
 - `pet.css` -- CSS-only cat sprite and pet animations (idle, walking, sleeping, eating, chasing, petted)
-- `sync.js` -- cross-device sync module. Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation) using a 12-word cat-themed seed phrase (256-word vocabulary, 96 bits entropy). Export generates a combined QR code (phrase + encrypted data) that the importing device scans in one shot. Manual fallback: copy phrase + encrypted blob separately. Also provides CSV export. Merge logic deduplicates sessions by ID, keeps later `endTime`.
+- `sync.js` -- cross-device sync module. Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation) using a 12-word cat-themed seed phrase (256-word vocabulary, 96 bits entropy). Export generates a combined QR code (phrase + encrypted data) that the importing device scans in one shot. Manual fallback: copy phrase + encrypted blob separately. Also provides CSV export. Merge logic deduplicates sessions by ID, keeps later `endTime`. Imported sessions are sanitized (type-checked, fields whitelist-mapped) before storage.
 - `qrcodegen.js` -- Project Nayuki's QR Code generator library v1.8.0 (MIT). Used by `qr.js`.
 - `qr.js` -- thin SVG wrapper around `qrcodegen.js`. Exposes `QR.toSVG(text, size)`.
 - `sw.js` -- service worker for offline caching. Bump `CACHE_NAME` version when changing cached assets.
@@ -44,7 +44,7 @@ To add a new language: add a translation object to the `translations` map in `i1
 
 ## Key patterns
 
-- Pages render by replacing `appEl.innerHTML` with template literal HTML, then attaching event listeners imperatively. There is no virtual DOM or diffing.
+- Pages render by replacing `appEl.innerHTML` with template literal HTML, then attaching event listeners imperatively. There is no virtual DOM or diffing. User-sourced data (e.g. imported session IDs) is escaped via `escapeAttr()` before insertion into attributes.
 - The timer page has three render states: idle, active (working/on-break), and session summary.
 - `window.getHubiCatHTML()` generates the CSS cat markup. Only one cat instance exists at a time -- the roaming pet. Pages no longer render static mascot cats; they use an empty `#mascot-slot` div to reserve header space.
 - The "Pawsome!" button text is always in English, never translated.

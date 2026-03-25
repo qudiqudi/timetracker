@@ -341,10 +341,10 @@ async function renderExportPage(appEl) {
     `;
 
     document.getElementById('copy-phrase').addEventListener('click', () => {
-        navigator.clipboard.writeText(phrase).then(() => showToast(t('copied')));
+        navigator.clipboard.writeText(phrase).then(() => showToast(t('copied'))).catch(() => {});
     });
     document.getElementById('copy-data').addEventListener('click', () => {
-        navigator.clipboard.writeText(encrypted).then(() => showToast(t('copied')));
+        navigator.clipboard.writeText(encrypted).then(() => showToast(t('copied'))).catch(() => {});
     });
     document.getElementById('export-back').addEventListener('click', () => renderSyncPage(appEl));
 }
@@ -432,7 +432,7 @@ function renderImportPage(appEl) {
             return;
         }
         if (!data) {
-            showToast('No data pasted');
+            showToast(t('noData'));
             return;
         }
 
@@ -448,6 +448,20 @@ function renderImportPage(appEl) {
         try {
             incoming = JSON.parse(decrypted);
             if (!Array.isArray(incoming)) throw new Error('not an array');
+            // Sanitize: keep only expected fields with expected types
+            incoming = incoming.filter(s =>
+                s && typeof s.id === 'string' &&
+                typeof s.startTime === 'number' &&
+                typeof s.endTime === 'number'
+            ).map(s => ({
+                id: String(s.id).replace(/[^a-z0-9]/gi, '').slice(0, 30),
+                date: typeof s.date === 'string' ? s.date.replace(/[^0-9-]/g, '').slice(0, 10) : new Date(s.startTime).toISOString().split('T')[0],
+                startTime: Number(s.startTime),
+                endTime: Number(s.endTime),
+                breaks: Array.isArray(s.breaks) ? s.breaks.filter(b => typeof b.start === 'number' && typeof b.end === 'number').map(b => ({ start: Number(b.start), end: Number(b.end) })) : [],
+                totalWork: typeof s.totalWork === 'number' ? Number(s.totalWork) : 0,
+                totalBreak: typeof s.totalBreak === 'number' ? Number(s.totalBreak) : 0,
+            }));
         } catch {
             showToast(t('decryptFailed'));
             return;
