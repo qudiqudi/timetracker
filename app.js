@@ -701,7 +701,7 @@ function getHubiInsight(totalWorkMs, daysWorked, period) {
     const totalHours = totalWorkMs / 3600000;
     const h = totalHours.toFixed(0);
 
-    if (daysWorked === 0) {
+    if (daysWorked === 0 || totalHours < 0.5) {
         const messages = [
             t('insightWaiting'),
             t('insightNoSessions'),
