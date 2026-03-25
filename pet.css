@@ -446,3 +446,253 @@
     0% { transform: rotate(-5deg) translateY(1px); }
     100% { transform: rotate(5deg) translateY(-1px); }
 }
+
+/* --- ANIMATION: GROOMING --- */
+.grooming .cat-head {
+    animation: grooming-head 1.2s infinite ease-in-out;
+}
+.grooming .cat-leg.front.left {
+    animation: grooming-paw 1.2s infinite ease-in-out;
+    z-index: 10;
+}
+.grooming .cat-tail {
+    animation: tail-idle 2s infinite ease-in-out;
+}
+.grooming .cat-eye {
+    height: 2px;
+    top: 7px;
+}
+@keyframes grooming-head {
+    0%, 100% { transform: translateY(2px) rotate(5deg); }
+    50% { transform: translateY(6px) rotate(12deg); }
+}
+@keyframes grooming-paw {
+    0%, 100% { transform: rotate(0deg); }
+    30%, 70% { transform: rotate(-70deg) translate(-8px, -10px); }
+}
+
+/* --- ANIMATION: STRETCHING --- */
+.stretching .cat-body {
+    animation: stretching-body 2.5s ease-in-out forwards;
+}
+.stretching .cat-head {
+    animation: stretching-head 2.5s ease-in-out forwards;
+}
+.stretching .cat-leg.front {
+    animation: stretching-legs-front 2.5s ease-in-out forwards;
+}
+.stretching .cat-leg.back {
+    animation: stretching-legs-back 2.5s ease-in-out forwards;
+}
+.stretching .cat-tail {
+    animation: stretching-tail 2.5s ease-in-out forwards;
+}
+.stretching .cat-mouth {
+    animation: stretching-yawn 2.5s ease-in-out forwards;
+}
+@keyframes stretching-body {
+    0%, 100% { transform: scaleX(1) scaleY(1); }
+    25%, 55% { transform: scaleX(1.2) scaleY(0.85) translateY(3px); }
+    75% { transform: scaleX(0.95) scaleY(1.1) translateY(-3px); }
+}
+@keyframes stretching-head {
+    0%, 100% { transform: translate(0, 0); }
+    25%, 55% { transform: translate(-8px, 5px) rotate(5deg); }
+    75% { transform: translate(2px, -3px); }
+}
+@keyframes stretching-legs-front {
+    0%, 100% { transform: rotate(0); }
+    25%, 55% { transform: rotate(30deg) translate(-8px, -3px); }
+}
+@keyframes stretching-legs-back {
+    0%, 100% { transform: rotate(0); }
+    25%, 55% { transform: rotate(-15deg); }
+}
+@keyframes stretching-tail {
+    0%, 100% { transform: rotate(-45deg); }
+    25%, 55% { transform: rotate(-70deg); }
+    75% { transform: rotate(-30deg); }
+}
+@keyframes stretching-yawn {
+    0%, 70%, 100% { transform: translateX(-50%) scaleY(1); }
+    30%, 55% { transform: translateX(-50%) scaleY(2.5); border-radius: 0 0 50% 50%; }
+}
+
+/* --- ANIMATION: HUNTING --- */
+.hunting .cat-body {
+    transform: scaleX(1.05) scaleY(0.8) translateY(5px);
+    animation: hunting-wiggle 0.3s infinite ease-in-out;
+}
+.hunting .cat-head {
+    transform: translateY(6px) rotate(3deg);
+}
+.hunting .cat-leg {
+    transform: rotate(30deg) translateY(-5px);
+}
+.hunting .cat-tail {
+    animation: tail-twitch 0.5s infinite ease-in-out;
+    transform-origin: 0% 50%;
+}
+.hunting .cat-eye {
+    height: 8px; width: 8px; top: 2px;
+}
+.hunting .cat-ear.left { transform: rotate(-10deg); }
+.hunting .cat-ear.right { transform: rotate(10deg); }
+@keyframes hunting-wiggle {
+    0%, 100% { transform: scaleX(1.05) scaleY(0.8) translateY(5px); }
+    50% { transform: scaleX(1.05) scaleY(0.8) translateX(2px) translateY(4px); }
+}
+@keyframes tail-twitch {
+    0%, 100% { transform: rotate(-45deg); }
+    30% { transform: rotate(-30deg); }
+    60% { transform: rotate(-50deg); }
+}
+
+/* --- ANIMATION: BUTTERFLY --- */
+.butterfly .cat-head {
+    animation: butterfly-track 4s infinite ease-in-out;
+}
+.butterfly .cat-eye {
+    width: 6px; height: 6px;
+    animation: eye-track 4s infinite ease-in-out;
+}
+.butterfly .cat-tail {
+    animation: butterfly-tail 2s infinite ease-in-out;
+}
+.butterfly .cat-ear.left {
+    animation: butterfly-ear-l 4s infinite ease-in-out;
+}
+.butterfly .cat-ear.right {
+    animation: butterfly-ear-r 4s infinite ease-in-out;
+}
+@keyframes butterfly-track {
+    0%, 100% { transform: rotate(-8deg) translateY(0); }
+    25% { transform: rotate(12deg) translateY(-4px); }
+    50% { transform: rotate(-3deg) translateY(-6px); }
+    75% { transform: rotate(15deg) translateY(-2px); }
+}
+@keyframes eye-track {
+    0%, 100% { transform: translate(-1px, -1px); }
+    25% { transform: translate(2px, -2px); }
+    50% { transform: translate(0px, -3px); }
+    75% { transform: translate(2px, 0px); }
+}
+@keyframes butterfly-tail {
+    0%, 100% { transform: rotate(-35deg); }
+    50% { transform: rotate(-55deg); }
+}
+@keyframes butterfly-ear-l {
+    0%, 100% { transform: rotate(-20deg); }
+    50% { transform: rotate(-30deg); }
+}
+@keyframes butterfly-ear-r {
+    0%, 100% { transform: rotate(20deg); }
+    50% { transform: rotate(30deg); }
+}
+
+/* --- ANIMATION: TUMMY-ROLL --- */
+.tummy-roll .cat-body {
+    background: var(--cat-light);
+    animation: tummy-body 4s ease-in-out infinite;
+}
+.tummy-roll .cat-head {
+    animation: tummy-head 4s ease-in-out infinite;
+}
+.tummy-roll .cat-leg {
+    animation: tummy-legs 4s ease-in-out infinite;
+}
+.tummy-roll .cat-leg.front.right {
+    animation-delay: 0.2s;
+}
+.tummy-roll .cat-leg.back.left {
+    animation-delay: 0.3s;
+}
+.tummy-roll .cat-leg.back.right {
+    animation-delay: 0.1s;
+}
+.tummy-roll .cat-tail {
+    animation: tummy-tail 2s ease-in-out infinite;
+}
+.tummy-roll .cat-eye {
+    height: 2px; top: 7px;
+}
+@keyframes tummy-body {
+    0%, 100% { transform: rotate(0deg) scaleY(1); }
+    20%, 80% { transform: rotate(70deg) scaleX(1.1) scaleY(0.85) translateY(5px); }
+    50% { transform: rotate(65deg) scaleX(1.1) scaleY(0.85) translateY(5px); }
+}
+@keyframes tummy-head {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    20%, 80% { transform: translate(5px, 10px) rotate(40deg); }
+    50% { transform: translate(3px, 12px) rotate(35deg); }
+}
+@keyframes tummy-legs {
+    0%, 100% { transform: rotate(0deg); }
+    20%, 80% { transform: rotate(-60deg) translateY(-8px); }
+    35% { transform: rotate(-70deg) translateY(-10px); }
+    65% { transform: rotate(-50deg) translateY(-6px); }
+}
+@keyframes tummy-tail {
+    0%, 100% { transform: rotate(-45deg); }
+    50% { transform: rotate(-20deg); }
+}
+
+/* --- ANIMATION: BOX --- */
+.box .cat-body, .box .cat-leg {
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.box .cat-head {
+    animation: box-peek 6s ease-in-out infinite;
+    z-index: 6;
+}
+.box .cat-tail {
+    animation: box-tail 3s ease-in-out infinite 1s;
+    transform-origin: 0% 50%;
+}
+.box .cat-eye {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    top: 2px;
+}
+.box .cat-ear.left { transform: rotate(-15deg); }
+.box .cat-ear.right { transform: rotate(15deg); }
+@keyframes box-peek {
+    0%, 100% { transform: translateY(18px); }
+    15%, 85% { transform: translateY(10px); }
+    40%, 60% { transform: translateY(5px) rotate(5deg); }
+    50% { transform: translateY(3px) rotate(-3deg); }
+}
+@keyframes box-tail {
+    0%, 100% { transform: rotate(-10deg) translateY(10px); }
+    50% { transform: rotate(-30deg) translateY(8px); }
+}
+
+/* --- ANIMATION: PRODUCTIVE --- */
+.productive .cat-head {
+    animation: productive-head 2s ease-in-out infinite;
+}
+.productive .cat-eye {
+    animation: blink 3s infinite;
+}
+.productive .cat-leg.front.left {
+    animation: typing-l 0.4s infinite alternate ease-in-out;
+}
+.productive .cat-leg.front.right {
+    animation: typing-r 0.4s infinite alternate-reverse ease-in-out;
+}
+.productive .cat-tail {
+    animation: tail-idle 2.5s infinite ease-in-out;
+}
+@keyframes productive-head {
+    0%, 100% { transform: translateY(2px) rotate(3deg); }
+    50% { transform: translateY(4px) rotate(6deg); }
+}
+@keyframes typing-l {
+    from { transform: rotate(0); }
+    to { transform: rotate(-15deg) translateY(-3px); }
+}
+@keyframes typing-r {
+    from { transform: rotate(0); }
+    to { transform: rotate(-12deg) translateY(-3px); }
+}

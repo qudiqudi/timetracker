@@ -10,7 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
         SLEEPING: 'sleeping',
         EATING: 'eating',
         CHASING: 'chasing',
-        PETTED: 'petted'
+        PETTED: 'petted',
+        GROOMING: 'grooming',
+        STRETCHING: 'stretching',
+        HUNTING: 'hunting',
+        BUTTERFLY: 'butterfly',
+        TUMMY_ROLL: 'tummy-roll',
+        BOX: 'box',
+        PRODUCTIVE: 'productive'
     };
 
     class HubiPet {
@@ -32,6 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="pet-prop prop-fish" aria-hidden="true">🐟</span>
                 <span class="pet-prop prop-toy" aria-hidden="true">🧶</span>
                 <span class="pet-prop prop-heart" aria-hidden="true">&#10084;</span>
+                <span class="pet-prop prop-butterfly" aria-hidden="true">🦋</span>
+                <span class="pet-prop prop-mouse" aria-hidden="true">🐭</span>
+                <span class="pet-prop prop-box" aria-hidden="true">📦</span>
+                <span class="pet-prop prop-laptop" aria-hidden="true">💻</span>
+                <span class="pet-prop prop-glasses" aria-hidden="true">👓</span>
                 ${window.getHubiCatHTML('', 'hubi-pet-sprite')}
             `;
 
@@ -371,19 +383,41 @@ document.addEventListener('DOMContentLoaded', () => {
         decideNextAction() {
             const rand = Math.random();
 
-            // Chances:
-            // 45% Walk
-            // 20% Eat
-            // 20% Sleep
-            // 15% Chase
-            if (rand < 0.45) {
+            // Chances (walk-heavy so the cat feels natural):
+            // 38% Walk
+            // 12% Eat
+            // 12% Sleep
+            // 7% Chase
+            // 7% Grooming
+            // 5% Stretching
+            // 5% Hunting
+            // 4% Butterfly
+            // 4% Tummy Roll
+            // 3% Box
+            // 3% Productive
+
+            if (rand < 0.38) {
                 this.walkToRandom();
-            } else if (rand < 0.65) {
+            } else if (rand < 0.50) {
                 this.setState(STATES.EATING, 4000 + Math.random() * 3000);
-            } else if (rand < 0.85) {
+            } else if (rand < 0.62) {
                 this.setState(STATES.SLEEPING, 6000 + Math.random() * 5000);
-            } else {
+            } else if (rand < 0.69) {
                 this.chaseToy();
+            } else if (rand < 0.76) {
+                this.setState(STATES.GROOMING, 3000 + Math.random() * 2000);
+            } else if (rand < 0.81) {
+                this.setState(STATES.STRETCHING, 2500);
+            } else if (rand < 0.86) {
+                this.setState(STATES.HUNTING, 3000 + Math.random() * 2000);
+            } else if (rand < 0.90) {
+                this.setState(STATES.BUTTERFLY, 5000);
+            } else if (rand < 0.94) {
+                this.setState(STATES.TUMMY_ROLL, 4000);
+            } else if (rand < 0.97) {
+                this.setState(STATES.BOX, 5000 + Math.random() * 2000);
+            } else {
+                this.setState(STATES.PRODUCTIVE, 5000 + Math.random() * 3000);
             }
         }
 
