@@ -81,7 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const clone = audio.cloneNode();
             clone.volume = 0.4 + Math.random() * 0.3;
             clone.playbackRate = 0.9 + Math.random() * 0.3;
-            clone.play().catch(() => {});
+            clone.play().catch(() => {
+                // Android autoplay policy may block audio — no user-facing error needed
+            });
         }
 
         onPetted() {

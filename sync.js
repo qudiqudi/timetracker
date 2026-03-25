@@ -196,7 +196,7 @@ function openScanner(onResult) {
     overlay.className = 'sync-camera';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:300;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;';
     overlay.innerHTML = `
-        <video autoplay playsinline style="width:100%;max-height:80vh;object-fit:cover;"></video>
+        <video autoplay playsinline muted style="width:100%;max-height:80vh;object-fit:cover;"></video>
         <button class="btn btn-secondary" style="margin-top:16px;">${t('closeCamera')}</button>
     `;
     document.body.appendChild(overlay);
@@ -237,9 +237,13 @@ function openScanner(onResult) {
             }
             scan();
         })
-        .catch(() => {
+        .catch(err => {
             cleanup();
-            showToast(t('qrScanNotSupported'));
+            if (err.name === 'NotAllowedError') {
+                showToast(t('cameraPermissionDenied') || 'Camera permission denied');
+            } else {
+                showToast(t('qrScanNotSupported'));
+            }
         });
 }
 

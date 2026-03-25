@@ -18,7 +18,13 @@ const Storage = {
         }
     },
     saveSessions(sessions) {
-        localStorage.setItem(this.KEY, JSON.stringify(sessions));
+        try {
+            localStorage.setItem(this.KEY, JSON.stringify(sessions));
+        } catch (e) {
+            if (e.name === 'QuotaExceededError') {
+                showToast(t('storageFull') || 'Storage full — delete old sessions');
+            }
+        }
     },
     addSession(session) {
         const sessions = this.getSessions();
@@ -42,7 +48,11 @@ const ActiveState = {
         }
     },
     set(state) {
-        localStorage.setItem(STATE_KEY, JSON.stringify(state));
+        try {
+            localStorage.setItem(STATE_KEY, JSON.stringify(state));
+        } catch {
+            // Quota exceeded — active state won't persist across refresh
+        }
     },
     clear() {
         localStorage.removeItem(STATE_KEY);

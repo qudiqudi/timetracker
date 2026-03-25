@@ -108,8 +108,8 @@ body::before {
     right: 0;
     height: var(--nav-height);
     background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-top: 1px solid rgba(255, 140, 66, 0.15);
     display: flex;
     justify-content: space-around;
@@ -786,8 +786,8 @@ body::before {
     position: fixed;
     inset: 0;
     background: rgba(61, 41, 20, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 300;
     display: flex;
     align-items: center;
@@ -1370,10 +1370,10 @@ body::before {
     border: 2px solid var(--cream-dark);
     border-radius: var(--radius-sm);
     font-family: monospace;
-    font-size: 0.75rem;
+    font-size: 16px;
     color: var(--chocolate);
     background: var(--white);
-    resize: vertical;
+    resize: none;
     outline: none;
     transition: border-color 0.3s;
     word-break: break-all;
@@ -1389,7 +1389,7 @@ body::before {
     border: 2px solid var(--cream-dark);
     border-radius: var(--radius-sm);
     font-family: var(--font-family);
-    font-size: 0.9rem;
+    font-size: 16px;
     font-weight: 600;
     color: var(--chocolate);
     background: var(--white);
