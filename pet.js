@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
         STRETCHING: 'stretching',
         HUNTING: 'hunting',
         BUTTERFLY: 'butterfly',
-        TUMMY_ROLL: 'tummy-roll',
         BOX: 'box',
         PRODUCTIVE: 'productive'
     };
@@ -384,36 +383,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const rand = Math.random();
 
             // Chances (walk-heavy so the cat feels natural):
-            // 38% Walk
+            // 40% Walk
             // 12% Eat
-            // 12% Sleep
+            // 14% Sleep
             // 7% Chase
             // 7% Grooming
             // 5% Stretching
             // 5% Hunting
             // 4% Butterfly
-            // 4% Tummy Roll
             // 3% Box
             // 3% Productive
 
-            if (rand < 0.38) {
+            if (rand < 0.40) {
                 this.walkToRandom();
-            } else if (rand < 0.50) {
+            } else if (rand < 0.52) {
                 this.setState(STATES.EATING, 4000 + Math.random() * 3000);
-            } else if (rand < 0.62) {
+            } else if (rand < 0.66) {
                 this.setState(STATES.SLEEPING, 6000 + Math.random() * 5000);
-            } else if (rand < 0.69) {
+            } else if (rand < 0.73) {
                 this.chaseToy();
-            } else if (rand < 0.76) {
+            } else if (rand < 0.80) {
                 this.setState(STATES.GROOMING, 3000 + Math.random() * 2000);
-            } else if (rand < 0.81) {
+            } else if (rand < 0.85) {
                 this.setState(STATES.STRETCHING, 2500);
-            } else if (rand < 0.86) {
-                this.setState(STATES.HUNTING, 3000 + Math.random() * 2000);
             } else if (rand < 0.90) {
-                this.setState(STATES.BUTTERFLY, 5000);
+                this.setState(STATES.HUNTING, 3000 + Math.random() * 2000);
             } else if (rand < 0.94) {
-                this.setState(STATES.TUMMY_ROLL, 4000);
+                this.setState(STATES.BUTTERFLY, 5000);
             } else if (rand < 0.97) {
                 this.setState(STATES.BOX, 5000 + Math.random() * 2000);
             } else {

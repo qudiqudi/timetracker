@@ -1126,10 +1126,11 @@ body::before {
 
 #hubi-pet.productive .prop-glasses {
     opacity: 1;
-    top: 5px;
-    left: 2px;
-    font-size: 1.2rem;
+    bottom: 25px;
+    left: -10px;
+    font-size: 0.9rem;
     z-index: 10;
+    animation: productive-head 2s ease-in-out infinite;
 }
 
 @keyframes butterflyFlight {

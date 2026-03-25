@@ -590,53 +590,6 @@
     50% { transform: rotate(30deg); }
 }
 
-/* --- ANIMATION: TUMMY-ROLL --- */
-.tummy-roll .cat-body {
-    background: var(--cat-light);
-    animation: tummy-body 4s ease-in-out infinite;
-}
-.tummy-roll .cat-head {
-    animation: tummy-head 4s ease-in-out infinite;
-}
-.tummy-roll .cat-leg {
-    animation: tummy-legs 4s ease-in-out infinite;
-}
-.tummy-roll .cat-leg.front.right {
-    animation-delay: 0.2s;
-}
-.tummy-roll .cat-leg.back.left {
-    animation-delay: 0.3s;
-}
-.tummy-roll .cat-leg.back.right {
-    animation-delay: 0.1s;
-}
-.tummy-roll .cat-tail {
-    animation: tummy-tail 2s ease-in-out infinite;
-}
-.tummy-roll .cat-eye {
-    height: 2px; top: 7px;
-}
-@keyframes tummy-body {
-    0%, 100% { transform: rotate(0deg) scaleY(1); }
-    20%, 80% { transform: rotate(70deg) scaleX(1.1) scaleY(0.85) translateY(5px); }
-    50% { transform: rotate(65deg) scaleX(1.1) scaleY(0.85) translateY(5px); }
-}
-@keyframes tummy-head {
-    0%, 100% { transform: translate(0, 0) rotate(0deg); }
-    20%, 80% { transform: translate(5px, 10px) rotate(40deg); }
-    50% { transform: translate(3px, 12px) rotate(35deg); }
-}
-@keyframes tummy-legs {
-    0%, 100% { transform: rotate(0deg); }
-    20%, 80% { transform: rotate(-60deg) translateY(-8px); }
-    35% { transform: rotate(-70deg) translateY(-10px); }
-    65% { transform: rotate(-50deg) translateY(-6px); }
-}
-@keyframes tummy-tail {
-    0%, 100% { transform: rotate(-45deg); }
-    50% { transform: rotate(-20deg); }
-}
-
 /* --- ANIMATION: BOX --- */
 .box .cat-body, .box .cat-leg {
     opacity: 0;
