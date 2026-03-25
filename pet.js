@@ -504,6 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- TREAT SYSTEM ---
+        // Note: depends on todayStr(), Storage, and ActiveState from app.js
 
         getTodayWorkMs() {
             const today = todayStr();
@@ -547,7 +548,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (document.visibilityState === 'visible') {
                         document.removeEventListener('visibilitychange', onVisible);
                         this.treatPending = false;
-                        this.startTreatSequence();
+                        // Re-check eligibility — date may have rolled over while hidden
+                        if (localStorage.getItem('hubi_treat_date') !== todayStr()) {
+                            this.startTreatSequence();
+                        }
                     }
                 };
                 document.addEventListener('visibilitychange', onVisible);
@@ -569,15 +573,28 @@ document.addEventListener('DOMContentLoaded', () => {
             this.setState(STATES.TREAT);
             this.treatPhase = 'waiting';
 
+            // Safety timeout — if anything goes wrong, recover after 25s
+            this.treatSafetyTimer = setTimeout(() => {
+                if (this.state === STATES.TREAT) {
+                    this.cleanupTreat();
+                    this.container.classList.remove(STATES.TREAT);
+                    this.transitionToIdle();
+                }
+            }, 25000);
+
             // Pick a position for the tray — away from Hubi
             const target = this.findTreatSpot();
             this.treatTarget = target;
+
+            // On narrow screens, treat elements use absolute positioning
+            // so coordinates need scroll offset to match document-relative coords
+            const scrollY = this.isNarrow() ? window.scrollY : 0;
 
             // Create tray element
             this.treatTray = document.createElement('div');
             this.treatTray.className = 'treat-tray';
             this.treatTray.style.left = target.x + 'px';
-            this.treatTray.style.top = (target.y + 40) + 'px';
+            this.treatTray.style.top = (target.y + 40 + scrollY) + 'px';
             if (this.isNarrow()) {
                 this.treatTray.style.position = 'absolute';
             }
@@ -587,7 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.treatBox = document.createElement('div');
             this.treatBox.className = 'treat-box';
             this.treatBox.style.left = (target.x - 5) + 'px';
-            this.treatBox.style.top = (target.y - 70) + 'px';
+            this.treatBox.style.top = (target.y - 70 + scrollY) + 'px';
             if (this.isNarrow()) {
                 this.treatBox.style.position = 'absolute';
             }
@@ -610,12 +627,13 @@ document.addEventListener('DOMContentLoaded', () => {
             this.treatBox.classList.add('pouring');
 
             // Spawn treat particles falling into tray
+            const scrollY = this.isNarrow() ? window.scrollY : 0;
             const particleCount = 5 + Math.floor(Math.random() * 4);
             for (let i = 0; i < particleCount; i++) {
                 const p = document.createElement('div');
                 p.className = 'treat-particle';
                 p.style.left = (this.treatTarget.x + 5 + Math.random() * 30) + 'px';
-                p.style.top = (this.treatTarget.y - 10) + 'px';
+                p.style.top = (this.treatTarget.y - 10 + scrollY) + 'px';
                 if (this.isNarrow()) {
                     p.style.position = 'absolute';
                 }
@@ -659,12 +677,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         this.container.classList.add('treat-happy');
 
                         // Spawn hearts
+                        const heartScrollY = this.isNarrow() ? window.scrollY : 0;
                         for (let i = 0; i < 3; i++) {
                             const heart = document.createElement('div');
                             heart.className = 'treat-heart';
                             heart.textContent = '\u2764';
                             heart.style.left = (this.x + 10 + i * 15) + 'px';
-                            heart.style.top = (this.y - 10) + 'px';
+                            heart.style.top = (this.y - 10 + heartScrollY) + 'px';
                             if (this.isNarrow()) {
                                 heart.style.position = 'absolute';
                             }
@@ -695,6 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         cleanupTreat() {
+            if (this.treatSafetyTimer) { clearTimeout(this.treatSafetyTimer); this.treatSafetyTimer = null; }
             if (this.treatTray) { this.treatTray.remove(); this.treatTray = null; }
             if (this.treatBox) { this.treatBox.remove(); this.treatBox = null; }
             this.container.classList.remove('treat-run', 'treat-eat', 'treat-happy');
