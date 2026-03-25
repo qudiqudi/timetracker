@@ -207,6 +207,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setState(newState, durationMs) {
             const prevState = this.state;
+
+            // Clean up treat DOM/classes if we're being pulled out of the treat state
+            if (prevState === STATES.TREAT && newState !== STATES.TREAT) {
+                this.cleanupTreat();
+            }
+
             this.container.classList.remove(prevState);
             this.state = newState;
             this.container.classList.add(this.state);
@@ -623,15 +629,73 @@ document.addEventListener('DOMContentLoaded', () => {
         onTreatBoxClicked() {
             if (this.treatPhase !== 'waiting') return;
             this.treatBox.removeEventListener('click', this.treatBoxHandler);
+            this.runTreatPhases();
+        }
+
+        async runTreatPhases() {
+            const delay = ms => new Promise(r => { this.treatDelayTimer = setTimeout(r, ms); });
+            const aborted = () => this.state !== STATES.TREAT;
 
             // Phase: pouring
             this.treatPhase = 'pouring';
             this.treatBox.classList.add('pouring');
+            this.spawnTreatParticles();
 
-            // Spawn treat particles falling into tray
+            await delay(1200);
+            if (aborted()) return;
+
+            // Phase: running to tray
+            this.treatPhase = 'running';
+            this.container.classList.add('treat-run');
+            this.playMeow();
+
+            const dx = this.treatTarget.x - this.x;
+            const dy = this.treatTarget.y - this.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            this.direction = dx >= 0 ? 1 : -1;
+            const runDuration = (distance / 180) * 1000;
+
+            this.x = this.treatTarget.x;
+            this.y = this.treatTarget.y;
+            this.updateTransform(runDuration);
+
+            await delay(runDuration);
+            if (aborted()) return;
+
+            // Phase: eating
+            this.container.classList.remove('treat-run');
+            this.treatPhase = 'eating';
+            this.container.classList.add('treat-eat');
+
+            await delay(4000 + Math.random() * 1000);
+            if (aborted()) return;
+
+            // Phase: happy
+            this.container.classList.remove('treat-eat');
+            this.treatPhase = 'happy';
+            this.container.classList.add('treat-happy');
+            this.spawnTreatHearts();
+
+            await delay(2000);
+            if (aborted()) return;
+
+            // Phase: food coma — transition to sleeping
+            this.container.classList.remove('treat-happy');
+            this.cleanupTreat();
+            this.container.classList.remove(STATES.TREAT);
+            this.state = STATES.SLEEPING;
+            this.container.classList.add(STATES.SLEEPING);
+
+            await delay(8000 + Math.random() * 2000);
+            if (this.state === STATES.SLEEPING) {
+                this.transitionToIdle();
+            }
+        }
+
+        spawnTreatParticles() {
             const scrollY = this.isNarrow() ? window.scrollY : 0;
-            const particleCount = 5 + Math.floor(Math.random() * 4);
-            for (let i = 0; i < particleCount; i++) {
+            const count = 5 + Math.floor(Math.random() * 4);
+            for (let i = 0; i < count; i++) {
                 const p = document.createElement('div');
                 p.className = 'treat-particle';
                 p.style.left = (this.treatTarget.x + 5 + Math.random() * 30) + 'px';
@@ -644,79 +708,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.appendChild(p);
                 p.addEventListener('animationend', () => p.remove());
             }
+        }
 
-            // Phase: running to tray
-            setTimeout(() => {
-                this.treatPhase = 'running';
-                this.container.classList.add('treat-run');
-
-                // Excited meow
-                this.playMeow();
-
-                const dx = this.treatTarget.x - this.x;
-                const dy = this.treatTarget.y - this.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                this.direction = dx >= 0 ? 1 : -1;
-                const runSpeed = 180;
-                const duration = (distance / runSpeed) * 1000;
-
-                this.x = this.treatTarget.x;
-                this.y = this.treatTarget.y;
-                this.updateTransform(duration);
-
-                // Phase: eating
-                setTimeout(() => {
-                    this.container.classList.remove('treat-run');
-                    this.treatPhase = 'eating';
-                    this.container.classList.add('treat-eat');
-
-                    const eatDuration = 4000 + Math.random() * 1000;
-
-                    // Phase: happy
-                    setTimeout(() => {
-                        this.container.classList.remove('treat-eat');
-                        this.treatPhase = 'happy';
-                        this.container.classList.add('treat-happy');
-
-                        // Spawn hearts
-                        const heartScrollY = this.isNarrow() ? window.scrollY : 0;
-                        for (let i = 0; i < 3; i++) {
-                            const heart = document.createElement('div');
-                            heart.className = 'treat-heart';
-                            heart.textContent = '\u2764';
-                            heart.style.left = (this.x + 10 + i * 15) + 'px';
-                            heart.style.top = (this.y - 10 + heartScrollY) + 'px';
-                            if (this.isNarrow()) {
-                                heart.style.position = 'absolute';
-                            }
-                            heart.style.animationDelay = (i * 0.3) + 's';
-                            document.body.appendChild(heart);
-                            heart.addEventListener('animationend', () => heart.remove());
-                        }
-
-                        // Phase: sleep
-                        setTimeout(() => {
-                            this.container.classList.remove('treat-happy');
-                            this.cleanupTreat();
-
-                            // Transition to sleeping
-                            this.container.classList.remove(STATES.TREAT);
-                            this.state = STATES.SLEEPING;
-                            this.container.classList.add(STATES.SLEEPING);
-
-                            setTimeout(() => {
-                                if (this.state === STATES.SLEEPING) {
-                                    this.transitionToIdle();
-                                }
-                            }, 8000 + Math.random() * 2000);
-                        }, 2000);
-                    }, eatDuration);
-                }, duration);
-            }, 1200);
+        spawnTreatHearts() {
+            const scrollY = this.isNarrow() ? window.scrollY : 0;
+            for (let i = 0; i < 3; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'treat-heart';
+                heart.textContent = '\u2764';
+                heart.style.left = (this.x + 10 + i * 15) + 'px';
+                heart.style.top = (this.y - 10 + scrollY) + 'px';
+                if (this.isNarrow()) {
+                    heart.style.position = 'absolute';
+                }
+                heart.style.animationDelay = (i * 0.3) + 's';
+                document.body.appendChild(heart);
+                heart.addEventListener('animationend', () => heart.remove());
+            }
         }
 
         cleanupTreat() {
             if (this.treatSafetyTimer) { clearTimeout(this.treatSafetyTimer); this.treatSafetyTimer = null; }
+            if (this.treatDelayTimer) { clearTimeout(this.treatDelayTimer); this.treatDelayTimer = null; }
             if (this.treatTray) { this.treatTray.remove(); this.treatTray = null; }
             if (this.treatBox) { this.treatBox.remove(); this.treatBox = null; }
             this.container.classList.remove('treat-run', 'treat-eat', 'treat-happy');
