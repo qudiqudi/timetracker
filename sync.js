@@ -446,8 +446,9 @@ function renderImportPage(appEl) {
         if (hubiIdx < 0) hubiIdx = rawPhrase.indexOf('hubi1:');
         if (hubiIdx > 0 && !data) {
             data = rawPhrase.substring(hubiIdx).replace(/\s/g, '');
-            // Fix case: prefix is uppercase
-            data = data.substring(0, 5).toUpperCase() + data.substring(5);
+            // Fix case: prefix (e.g. "HUBI2:") is uppercase
+            const colonIdx = data.indexOf(':');
+            data = data.substring(0, colonIdx).toUpperCase() + data.substring(colonIdx);
             rawPhrase = rawPhrase.substring(0, hubiIdx).replace(/[|]/g, '').trim();
         }
 

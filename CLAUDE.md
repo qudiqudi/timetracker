@@ -23,7 +23,7 @@ Pushes to `main` auto-deploy to GitHub Pages via `.github/workflows/deploy.yml`.
 - `styles.css` -- app styles
 - `pet.css` -- CSS-only cat sprite and pet animations (idle, walking, sleeping, eating, chasing, petted, treat)
 - `dev.js` -- dev menu for testing animations. Localhost-only (conditionally loaded via `index.html`), excluded from deploy by the GitHub Actions workflow. Floating draggable panel with buttons for each animation state + treat trigger/reset.
-- `sync.js` -- cross-device sync module. Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation) using a 12-word cat-themed seed phrase (256-word vocabulary, 96 bits entropy). Export generates a combined QR code (phrase + encrypted data) that the importing device scans in one shot. Manual fallback: copy phrase + encrypted blob separately. Also provides CSV export. Merge logic deduplicates sessions by ID, keeps later `endTime`. Imported sessions are sanitized (type-checked, fields whitelist-mapped) before storage.
+- `sync.js` -- cross-device sync module. Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation with random salt) using a 12-word cat-themed seed phrase (256-word vocabulary, 96 bits entropy). Current export format is HUBI2 (random per-export PBKDF2 salt); import still accepts legacy HUBI1 (static salt). Export generates a combined QR code (phrase + encrypted data) that the importing device scans in one shot. Manual fallback: copy phrase + encrypted blob separately. Also provides CSV export. Merge logic deduplicates sessions by ID, keeps later `endTime`. Imported sessions are sanitized (type-checked, fields whitelist-mapped) before storage.
 - `qrcodegen.js` -- Project Nayuki's QR Code generator library v1.8.0 (MIT). Used by `qr.js`.
 - `qr.js` -- thin SVG wrapper around `qrcodegen.js`. Exposes `QR.toSVG(text, size)`.
 - `sw.js` -- service worker for offline caching. Bump `CACHE_NAME` version when changing cached assets.
@@ -50,3 +50,5 @@ To add a new language: add a translation object to the `translations` map in `i1
 - The timer page has three render states: idle, active (working/on-break), and session summary.
 - `window.getHubiCatHTML()` generates the CSS cat markup. Only one cat instance exists at a time -- the roaming pet. Pages no longer render static mascot cats; they use an empty `#mascot-slot` div to reserve header space.
 - The "Pawsome!" button text is always in English, never translated.
+- A Content-Security-Policy meta tag in `index.html` restricts resource origins. The `script-src` includes a sha256 hash for the inline dev.js loader script (lines 51-57). If that inline script changes, the hash must be regenerated (`echo -n '<script content>' | openssl dgst -sha256 -binary | base64`) and updated in the CSP.
+- Fonts are self-hosted in `assets/fonts/` (Nunito woff2). No external CDN dependencies.
