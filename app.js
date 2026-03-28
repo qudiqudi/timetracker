@@ -1273,12 +1273,22 @@ function showDialog(emoji, title, text, confirmLabel, cancelLabel, onConfirm) {
 }
 
 // ---- Changelog ----
-function showChangelog() {
-    const CHANGELOG_KEY = 'hubi_changelog_v1_seen';
-    if (localStorage.getItem(CHANGELOG_KEY)) return;
+const CHANGELOG_VERSION = 1;
+const CHANGELOG_ENTRIES = [
+    { emoji: '✏️', titleKey: 'whatsNewEditEntryTitle', descKey: 'whatsNewEditEntryDesc' },
+];
 
-    const existing = document.querySelector('.dialog-overlay');
-    if (existing) return;
+function showChangelog() {
+    const CHANGELOG_KEY = 'hubi_changelog_seen';
+    // Migrate from old v1 key
+    if (localStorage.getItem('hubi_changelog_v1_seen')) {
+        localStorage.setItem(CHANGELOG_KEY, '1');
+        localStorage.removeItem('hubi_changelog_v1_seen');
+    }
+    const seen = parseInt(localStorage.getItem(CHANGELOG_KEY) || '0', 10);
+    if (seen >= CHANGELOG_VERSION) return;
+
+    if (document.querySelector('.dialog-overlay')) return;
 
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay';
@@ -1287,13 +1297,15 @@ function showChangelog() {
             <div class="dialog-emoji">✨</div>
             <div class="dialog-title">${t('whatsNew')}</div>
             <div class="changelog-list">
-                <div class="changelog-item">
-                    <div class="changelog-title">${t('whatsNewEditEntryTitle')}</div>
-                    <div class="changelog-desc">${t('whatsNewEditEntryDesc')}</div>
-                </div>
+                ${CHANGELOG_ENTRIES.map(e => `
+                    <div class="changelog-item">
+                        <div class="changelog-title">${e.emoji} ${t(e.titleKey)}</div>
+                        <div class="changelog-desc">${t(e.descKey)}</div>
+                    </div>
+                `).join('')}
             </div>
             <div class="dialog-actions">
-                <button class="btn btn-start" style="width: 100%;" id="changelog-awesome">${t('awesome')}</button>
+                <button class="btn btn-start" style="width: 100%;" id="changelog-awesome">Awesome!</button>
             </div>
         </div>
     `;
@@ -1301,7 +1313,7 @@ function showChangelog() {
 
     const closeBtn = document.getElementById('changelog-awesome');
     closeBtn.addEventListener('click', () => {
-        localStorage.setItem(CHANGELOG_KEY, 'true');
+        localStorage.setItem(CHANGELOG_KEY, String(CHANGELOG_VERSION));
         overlay.remove();
     });
 }
