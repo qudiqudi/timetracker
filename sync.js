@@ -238,6 +238,7 @@ const CloudSync = {
     _intervalId: null,
     _pushDebounce: null,
     _syncing: false,
+    _pendingSync: false,
     _lastEtag: localStorage.getItem(SYNC_ETAG_KEY) || null,
     INTERVAL_MS: 5 * 60 * 1000,
 
@@ -265,7 +266,8 @@ const CloudSync = {
         return localStorage.getItem(SYNC_LAST_KEY) || null;
     },
 
-    async push(phrase, _retry) {
+    async push(phrase, _attempt) {
+        const attempt = _attempt || 0;
         const sessions = Storage.getAllRaw();
         const active = ActiveState.getForSync();
         if (!sessions.length && !active.state) return;
@@ -279,10 +281,11 @@ const CloudSync = {
             headers,
             body: encrypted,
         });
-        if (res.status === 409 && !_retry) {
-            // Conflict -- pull fresh data, adopt server ETag, and retry once
+        if (res.status === 409 && attempt < 3) {
+            // Conflict -- pull fresh data, merge, back off briefly, retry
             await this.pull(phrase);
-            return this.push(phrase, true);
+            if (attempt > 0) await new Promise(r => setTimeout(r, 500 * attempt));
+            return this.push(phrase, attempt + 1);
         }
         if (!res.ok) throw new Error(`Push failed: ${res.status}`);
         this._setEtag(res.headers.get('ETag'));
@@ -300,7 +303,7 @@ const CloudSync = {
 
     async pull(phrase) {
         const channelId = await phraseToChannel(phrase);
-        const res = await fetch(`${SYNC_API}/sync/${channelId}`);
+        const res = await fetch(`${SYNC_API}/sync/${channelId}`, { cache: 'no-store' });
         if (res.status === 404) {
             this._setEtag(null);
             return 0;
@@ -331,7 +334,10 @@ const CloudSync = {
     },
 
     async sync() {
-        if (this._syncing) return;
+        if (this._syncing) {
+            this._pendingSync = true;
+            return;
+        }
         const phrase = this.getPhrase();
         if (!phrase) return;
         this._syncing = true;
@@ -343,6 +349,10 @@ const CloudSync = {
             console.warn('Cloud sync failed:', e.message);
         } finally {
             this._syncing = false;
+            if (this._pendingSync) {
+                this._pendingSync = false;
+                this.schedulePush();
+            }
         }
     },
 
