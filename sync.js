@@ -43,7 +43,7 @@ const WORDS = [
 const DATA_PREFIX = 'HUBI2:';
 
 // ---- Cloud Sync Config ----
-const SYNC_API = 'https://sync.qudiqudi.de';
+const SYNC_API = 'https://sync.hubi.work';
 const SYNC_PHRASE_KEY = 'hubi_sync_phrase';
 const SYNC_LAST_KEY = 'hubi_sync_last';
 const SYNC_ETAG_KEY = 'hubi_sync_etag';
