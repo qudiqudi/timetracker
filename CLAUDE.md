@@ -12,7 +12,7 @@ Open `index.html` in a browser. No build step, no dev server required. For servi
 
 ## Deployment
 
-Pushes to `main` auto-deploy to GitHub Pages via `.github/workflows/deploy.yml`. The workflow removes dev-only files (`dev.js`) then uploads the repo root as a static site.
+Pushes to `main` auto-deploy to GitHub Pages via `.github/workflows/deploy.yml`. The workflow removes dev-only files (`dev.js`) and the `worker/` directory, then uploads the repo root as a static site. The Cloudflare Worker (`worker/`) is deployed separately via `wrangler deploy` from the `worker/` directory.
 
 ## Architecture
 
@@ -23,7 +23,11 @@ Pushes to `main` auto-deploy to GitHub Pages via `.github/workflows/deploy.yml`.
 - `styles.css` -- app styles
 - `pet.css` -- CSS-only cat sprite and pet animations (idle, walking, sleeping, eating, chasing, petted, treat)
 - `dev.js` -- dev menu for testing animations. Localhost-only (conditionally loaded via `index.html`), excluded from deploy by the GitHub Actions workflow. Floating draggable panel with buttons for each animation state + treat trigger/reset.
-- `sync.js` -- cross-device sync module. Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation with random salt) using a 12-word cat-themed seed phrase (256-word vocabulary, 96 bits entropy). Current export format is HUBI2 (random per-export PBKDF2 salt); import still accepts legacy HUBI1 (static salt). Export generates a combined QR code (phrase + encrypted data) that the importing device scans in one shot. Manual fallback: copy phrase + encrypted blob separately. Also provides CSV export. Merge logic deduplicates sessions by ID, keeps later `endTime`. Imported sessions are sanitized (type-checked, fields whitelist-mapped) before storage.
+- `sync.js` -- cross-device sync module. Two sync modes:
+  - **Cloud Sync**: persistent auto-sync via Cloudflare Workers + KV. A `CloudSync` object manages pairing (phrase stored in localStorage), auto-sync (pull-merge-push on app load + every 5 min), and `Storage.saveSessions` is monkey-patched to trigger a debounced sync on every save. The channel ID is derived as SHA-256("channel:" + phrase), separate from the encryption key derivation. The worker at `sync.qudiqudi.de` is a dumb PUT/GET relay (30-day TTL, 512KB max). E2E encrypted -- the worker only sees opaque blobs.
+  - **QR/Manual Sync**: one-shot transfer. Export generates a combined QR code (phrase + encrypted data) that the importing device scans. Manual fallback: copy phrase + encrypted blob separately.
+  - Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation with random salt) using a 12-word cat-themed seed phrase (256-word vocabulary, no prefix-ambiguous pairs, 96 bits entropy). Current export format is HUBI2 (random per-export PBKDF2 salt); import still accepts legacy HUBI1 (static salt). Phrase inputs have wallet-style autocomplete (type a few chars, dropdown suggests matching words). Also provides CSV export. Merge logic deduplicates sessions by ID, keeps later `endTime`. Imported sessions are sanitized (type-checked, fields whitelist-mapped) via `sanitizeSessions()` before storage.
+- `worker/` -- Cloudflare Worker for cloud sync relay. `wrangler.toml` + `src/index.js`. Deployed to `sync.qudiqudi.de`. KV namespace `SYNC_KV` stores encrypted blobs keyed by 64-char hex channel IDs.
 - `qrcodegen.js` -- Project Nayuki's QR Code generator library v1.8.0 (MIT). Used by `qr.js`.
 - `qr.js` -- thin SVG wrapper around `qrcodegen.js`. Exposes `QR.toSVG(text, size)`.
 - `sw.js` -- service worker for offline caching. Bump `CACHE_NAME` version when changing cached assets.
@@ -35,8 +39,10 @@ All data lives in `localStorage`:
 - `hubi_sessions` -- array of completed session records (work/break durations, timestamps)
 - `hubi_active_state` -- current in-progress timer state (survives page refresh)
 - `hubi_treat_date` -- ISO date string of last treat given (prevents multiple treats per day)
+- `hubi_sync_phrase` -- stored cloud sync phrase (present when paired)
+- `hubi_sync_last` -- ISO timestamp of last successful cloud sync
 
-`Storage` and `ActiveState` objects in `app.js` are the only access points for persisted data.
+`Storage` and `ActiveState` objects in `app.js` are the only access points for session/timer data. Cloud sync keys are managed by the `CloudSync` object in `sync.js`.
 
 ## Internationalization
 
@@ -52,3 +58,4 @@ To add a new language: add a translation object to the `translations` map in `i1
 - The "Pawsome!" button text is always in English, never translated.
 - A Content-Security-Policy meta tag in `index.html` restricts resource origins. The `script-src` includes a sha256 hash for the inline dev.js loader script (lines 51-57). If that inline script changes, the hash must be regenerated (`echo -n '<script content>' | openssl dgst -sha256 -binary | base64`) and updated in the CSP.
 - Fonts are self-hosted in `assets/fonts/` (Nunito woff2). No external CDN dependencies.
+- The CSP `connect-src` directive allows fetches to `https://sync.qudiqudi.de` for cloud sync.
