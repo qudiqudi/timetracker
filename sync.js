@@ -46,6 +46,7 @@ const DATA_PREFIX = 'HUBI2:';
 const SYNC_API = 'https://sync.qudiqudi.de';
 const SYNC_PHRASE_KEY = 'hubi_sync_phrase';
 const SYNC_LAST_KEY = 'hubi_sync_last';
+const SYNC_ETAG_KEY = 'hubi_sync_etag';
 
 // ---- Crypto Helpers ----
 
@@ -207,24 +208,28 @@ function mergeSessions(existing, incoming) {
     for (const s of existing) map.set(s.id, s);
 
     let newCount = 0;
+    let changed = false;
     for (const s of incoming) {
         const have = map.get(s.id);
         if (!have) {
             map.set(s.id, s);
             if (!s.deletedAt) newCount++;
+            changed = true;
         } else if ((s.updatedAt || 0) > (have.updatedAt || 0)) {
             map.set(s.id, s);
+            changed = true;
         } else if (!s.updatedAt && !have.updatedAt) {
             // Legacy sessions without updatedAt: keep later endTime
             if (s.endTime && (!have.endTime || s.endTime > have.endTime)) {
                 map.set(s.id, s);
+                changed = true;
             }
         }
     }
 
     const merged = Array.from(map.values());
     merged.sort((a, b) => b.startTime - a.startTime);
-    return { merged, newCount };
+    return { merged, newCount, changed };
 }
 
 // ---- Cloud Sync ----
@@ -232,7 +237,7 @@ function mergeSessions(existing, incoming) {
 const CloudSync = {
     _intervalId: null,
     _pushDebounce: null,
-    _lastEtag: null,
+    _lastEtag: localStorage.getItem(SYNC_ETAG_KEY) || null,
     INTERVAL_MS: 5 * 60 * 1000,
 
     getPhrase() {
@@ -246,6 +251,8 @@ const CloudSync = {
     clearPhrase() {
         localStorage.removeItem(SYNC_PHRASE_KEY);
         localStorage.removeItem(SYNC_LAST_KEY);
+        localStorage.removeItem(SYNC_ETAG_KEY);
+        this._lastEtag = null;
         this.stopAutoSync();
     },
 
@@ -277,8 +284,14 @@ const CloudSync = {
             return this.push(phrase, true);
         }
         if (!res.ok) throw new Error(`Push failed: ${res.status}`);
-        const etag = res.headers.get('ETag');
-        if (etag) this._lastEtag = etag;
+        this._setEtag(res.headers.get('ETag'));
+    },
+
+    _setEtag(etag) {
+        if (etag) {
+            this._lastEtag = etag;
+            localStorage.setItem(SYNC_ETAG_KEY, etag);
+        }
     },
 
     async pull(phrase) {
@@ -286,8 +299,7 @@ const CloudSync = {
         const res = await fetch(`${SYNC_API}/sync/${channelId}`);
         if (res.status === 404) return 0;
         if (!res.ok) throw new Error(`Pull failed: ${res.status}`);
-        const etag = res.headers.get('ETag');
-        if (etag) this._lastEtag = etag;
+        this._setEtag(res.headers.get('ETag'));
         const blob = await res.text();
         if (!blob) return 0;
         const decrypted = await decryptData(blob, phrase);
@@ -297,12 +309,15 @@ const CloudSync = {
         const incomingActive = Array.isArray(parsed) ? null : (parsed.active || null);
         const incoming = sanitizeSessions(incomingSessions);
         const existing = Storage.getAllRaw();
-        const { merged, newCount } = mergeSessions(existing, incoming);
-        Storage.saveSessions(merged);
+        const { merged, newCount, changed } = mergeSessions(existing, incoming);
+        if (changed) _origSave(merged);
         if (incomingActive && ActiveState.applyFromSync(incomingActive)) {
-            // Re-render timer page if active state changed and we're viewing it
-            if (typeof currentPage !== 'undefined' && currentPage === 'timer') {
-                renderTimerPage();
+            try {
+                if (typeof currentPage !== 'undefined' && currentPage === 'timer') {
+                    renderTimerPage();
+                }
+            } catch (e) {
+                console.warn('Failed to re-render timer after sync:', e);
             }
         }
         return newCount;

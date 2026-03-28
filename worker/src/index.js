@@ -6,11 +6,12 @@ const ALLOWED_ORIGINS = [
 
 function corsHeaders(request) {
 	const origin = request.headers.get('Origin') || '';
-	const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+	if (!ALLOWED_ORIGINS.includes(origin)) return { 'Vary': 'Origin' };
 	return {
-		'Access-Control-Allow-Origin': allowed,
+		'Access-Control-Allow-Origin': origin,
 		'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
 		'Access-Control-Allow-Headers': 'Content-Type, If-Match',
+		'Access-Control-Expose-Headers': 'ETag',
 		'Vary': 'Origin',
 	};
 }
