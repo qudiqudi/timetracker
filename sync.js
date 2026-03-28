@@ -327,6 +327,9 @@ const CloudSync = {
                 this._pendingSync = false;
                 this.schedulePush();
             }
+            if (typeof currentPage !== 'undefined' && currentPage === 'sync') {
+                renderSyncPage(document.getElementById('app'));
+            }
         }
     },
 
