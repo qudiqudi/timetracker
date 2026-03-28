@@ -539,6 +539,15 @@ function renderHistoryPage() {
         });
     });
 
+    // Watch picker trigger listeners
+    document.querySelectorAll('.wp-trigger').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pickerId = btn.dataset.pickerId;
+            const is24h = btn.dataset.is24h === 'true';
+            openWatchPickerFor(pickerId, is24h);
+        });
+    });
+
     // Delete listeners
     document.querySelectorAll('.card-delete').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -597,18 +606,20 @@ function renderSessionCard(session) {
 }
 
 let currentWatchPicker = null;
+let currentWatchPickerCleanup = null;
+
+function formatTimeDisplay(timeString, is24h) {
+    if (is24h) return timeString;
+    const [hh, mm] = timeString.split(':').map(Number);
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    const h12 = hh % 12 || 12;
+    return `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${ampm}`;
+}
 
 function createCustomTimePicker(id, timeString, is24h) {
-    let displayTime = timeString;
-    if (!is24h) {
-        let [hh, mm] = timeString.split(':').map(Number);
-        let ampm = hh >= 12 ? 'PM' : 'AM';
-        let h12 = hh % 12 || 12;
-        displayTime = `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${ampm}`;
-    }
     return `
-        <div class="watch-picker-wrapper" style="position: relative; width: 100%;">
-            <button type="button" class="native-time-picker" id="btn-${id}" style="text-align: left; background: var(--white); border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); padding: 0 10px; height: 44px; width: 100%; font-family: var(--font-family); font-size: 1rem; font-weight: 600; color: var(--chocolate); outline: none; cursor: pointer; display: block; box-sizing: border-box;" onclick="openWatchPickerUI('${id}', ${is24h})">${displayTime}</button>
+        <div class="watch-picker-wrapper">
+            <button type="button" class="native-time-picker wp-trigger" id="btn-${id}" data-picker-id="${id}" data-is24h="${is24h}">${formatTimeDisplay(timeString, is24h)}</button>
             <input type="hidden" id="${id}" value="${timeString}">
         </div>
     `;
@@ -620,107 +631,189 @@ function getCustomTimePickerValue(id) {
     return el.value;
 }
 
-window.openWatchPickerUI = function(id, is24h) {
-    const hiddenInput = document.getElementById(id);
-    const btn = document.getElementById(`btn-${id}`);
+function openWatchPickerFor(pickerId, is24h) {
+    const hiddenInput = document.getElementById(pickerId);
+    const btn = document.getElementById(`btn-${pickerId}`);
     if (!hiddenInput) return;
-    
+
     showWatchPicker(hiddenInput.value, is24h, (newTime) => {
         hiddenInput.value = newTime;
-        let displayTime = newTime;
-        if (!is24h) {
-            let [hh, mm] = newTime.split(':').map(Number);
-            let ampm = hh >= 12 ? 'PM' : 'AM';
-            let h12 = hh % 12 || 12;
-            displayTime = `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${ampm}`;
-        }
-        btn.textContent = displayTime;
+        btn.textContent = formatTimeDisplay(newTime, is24h);
     });
-};
+}
 
 function showWatchPicker(initialTime, is24h, onSave) {
-    if (currentWatchPicker) currentWatchPicker.remove();
-    
+    if (currentWatchPicker) {
+        if (currentWatchPickerCleanup) currentWatchPickerCleanup();
+        currentWatchPicker.remove();
+    }
+
     let [h, m] = initialTime.split(':').map(Number);
     let ampm = 'AM';
-    
+
     if (!is24h) {
         ampm = (h >= 12) ? 'PM' : 'AM';
         h = h % 12 || 12;
     }
-    
-    let mode = 'hour'; 
-    
+
+    let mode = 'hour';
+    let isDragging = false;
+    let hasDragged = false;
+
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay wp-overlay';
-    
+
     overlay.innerHTML = `
-        <div class="watch-picker-modal dialog" style="padding: 24px; max-width: 320px;">
-            <div class="wp-header" style="background: var(--orange-primary); color: white; padding: 16px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; margin: -24px -24px 16px -24px; text-align: left; display: flex; justify-content: space-between; align-items: center;">
-                <div class="wp-time-display" style="font-size: 2.5rem; font-weight: 800; letter-spacing: 2px;">
-                    <span id="wp-h-disp" class="wp-segment wp-active" style="cursor: pointer; opacity: 1;">${is24h ? String(h).padStart(2, '0') : String(h)}</span>:<span id="wp-m-disp" class="wp-segment" style="cursor: pointer; opacity: 0.6;">${String(m).padStart(2, '0')}</span>
+        <div class="watch-picker-modal dialog">
+            <div class="wp-header">
+                <div class="wp-time-display">
+                    <span id="wp-h-disp" class="wp-segment wp-segment-active">${is24h ? String(h).padStart(2, '0') : String(h)}</span>:<span id="wp-m-disp" class="wp-segment wp-segment-dim">${String(m).padStart(2, '0')}</span>
                 </div>
                 ${!is24h ? `
-                <div class="wp-ampm-switch" style="display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 0.9rem;">
-                    <button id="wp-am-btn" style="background: none; border: none; color: white; opacity: ${ampm === 'AM' ? '1' : '0.5'}; cursor: pointer;">AM</button>
-                    <button id="wp-pm-btn" style="background: none; border: none; color: white; opacity: ${ampm === 'PM' ? '1' : '0.5'}; cursor: pointer;">PM</button>
+                <div class="wp-ampm-switch">
+                    <button id="wp-am-btn" class="wp-ampm-btn ${ampm === 'AM' ? 'wp-ampm-active' : 'wp-ampm-dim'}">AM</button>
+                    <button id="wp-pm-btn" class="wp-ampm-btn ${ampm === 'PM' ? 'wp-ampm-active' : 'wp-ampm-dim'}">PM</button>
                 </div>
                 ` : ''}
             </div>
-            <div class="wp-body" style="display: flex; justify-content: center; align-items: center; padding: 16px 0;">
-                <div class="wp-dial-container" style="position: relative; width: 220px; height: 220px; border-radius: 50%; background: var(--cream); margin: 0 auto; user-select: none;">
-                    <div class="wp-center-dot" style="position: absolute; width: 6px; height: 6px; background: var(--orange-primary); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;"></div>
-                    <div class="wp-hand" id="wp-hand" style="position: absolute; width: 2px; background: var(--orange-primary); bottom: 50%; left: calc(50% - 1px); transform-origin: bottom center; z-index: 5; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;"></div>
-                    <div class="wp-numbers" id="wp-numbers" style="position: absolute; inset: 0;"></div>
+            <div class="wp-body">
+                <div class="wp-dial-container" id="wp-dial">
+                    <div class="wp-center-dot"></div>
+                    <div class="wp-hand" id="wp-hand"></div>
+                    <div class="wp-numbers" id="wp-numbers"></div>
                 </div>
             </div>
-            <div class="dialog-actions" style="margin-top: 24px; justify-content: flex-end;">
-                <button class="btn btn-secondary" id="wp-cancel" style="padding: 10px 16px; font-size: 0.9rem; flex: none;">${typeof t === 'function' ? t('cancel') : 'Cancel'}</button>
-                <button class="btn btn-start" id="wp-ok" style="padding: 10px 16px; font-size: 0.9rem; flex: none;">${typeof t === 'function' ? t('save') : 'Save'}</button>
+            <div class="dialog-actions wp-actions">
+                <button class="btn btn-secondary wp-action-btn" id="wp-cancel">${t('cancel')}</button>
+                <button class="btn btn-start wp-action-btn" id="wp-ok">${t('save')}</button>
             </div>
         </div>
     `;
     document.body.appendChild(overlay);
     currentWatchPicker = overlay;
-    
-    const modal = overlay.querySelector('.watch-picker-modal');
-    modal.style.animation = 'dialogIn 0.3s var(--transition-bounce) both';
-    
+    currentWatchPickerCleanup = null;
+
     const hDisp = overlay.querySelector('#wp-h-disp');
     const mDisp = overlay.querySelector('#wp-m-disp');
     const numbersContainer = overlay.querySelector('#wp-numbers');
     const hand = overlay.querySelector('#wp-hand');
-    
+    const dial = overlay.querySelector('#wp-dial');
+
     if (!is24h) {
-        overlay.querySelector('#wp-am-btn').addEventListener('click', (e) => {
+        overlay.querySelector('#wp-am-btn').addEventListener('click', () => {
             ampm = 'AM';
-            e.target.style.opacity = '1';
-            overlay.querySelector('#wp-pm-btn').style.opacity = '0.5';
+            overlay.querySelector('#wp-am-btn').className = 'wp-ampm-btn wp-ampm-active';
+            overlay.querySelector('#wp-pm-btn').className = 'wp-ampm-btn wp-ampm-dim';
         });
-        overlay.querySelector('#wp-pm-btn').addEventListener('click', (e) => {
+        overlay.querySelector('#wp-pm-btn').addEventListener('click', () => {
             ampm = 'PM';
-            e.target.style.opacity = '1';
-            overlay.querySelector('#wp-am-btn').style.opacity = '0.5';
+            overlay.querySelector('#wp-pm-btn').className = 'wp-ampm-btn wp-ampm-active';
+            overlay.querySelector('#wp-am-btn').className = 'wp-ampm-btn wp-ampm-dim';
         });
     }
-    
+
     function setHand(angle, radiusOffset = 0) {
         hand.style.transform = `rotate(${angle}deg)`;
         hand.style.height = `calc(50% - ${radiusOffset + 14}px)`;
     }
-    
-    function renderDial() {
+
+    function getAngleFromEvent(e) {
+        const rect = dial.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        let angle = Math.atan2(clientX - cx, -(clientY - cy)) * (180 / Math.PI);
+        if (angle < 0) angle += 360;
+        return angle;
+    }
+
+    function updateActiveHighlight() {
+        numbersContainer.querySelectorAll('.wp-number').forEach(el => {
+            const val = Number(el.dataset.val);
+            const isActive = mode === 'hour' ? val === h : val === (Math.floor(m / 5) * 5);
+            el.classList.toggle('wp-number-active', isActive);
+        });
+    }
+
+    function handleDragMove(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        hand.style.transition = 'none';
+        const angle = getAngleFromEvent(e);
+
+        if (mode === 'minute') {
+            m = Math.round(angle / 6) % 60;
+            mDisp.textContent = String(m).padStart(2, '0');
+            setHand(m * 6, 0);
+        } else {
+            let val = Math.round(angle / 30) % 12;
+            if (is24h) {
+                const rect = dial.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const dist = Math.sqrt((clientX - cx) ** 2 + (clientY - cy) ** 2);
+                const isInner = dist < rect.width * 0.32;
+                if (isInner) {
+                    val = val === 0 ? 0 : val + 12;
+                    if (val > 23) val = 0;
+                }
+                h = val;
+                hDisp.textContent = String(h).padStart(2, '0');
+                setHand((h % 12) * 30, (h === 0 || h > 12) ? 35 : 0);
+            } else {
+                h = val === 0 ? 12 : val;
+                hDisp.textContent = String(h);
+                setHand((h % 12) * 30, 0);
+            }
+        }
+        updateActiveHighlight();
+    }
+
+    function handleDragEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        hand.style.transition = '';
+        if (mode === 'hour' && hasDragged) {
+            mode = 'minute';
+            hDisp.className = 'wp-segment wp-segment-dim';
+            mDisp.className = 'wp-segment wp-segment-active';
+            setTimeout(() => renderDial(), 50);
+        }
+    }
+
+    function handleMouseMove(e) { if (isDragging) { hasDragged = true; handleDragMove(e); } }
+    function handleTouchMove(e) { if (isDragging) { hasDragged = true; handleDragMove(e); } }
+
+    dial.addEventListener('mousedown', () => { isDragging = true; hasDragged = false; });
+    dial.addEventListener('touchstart', () => { isDragging = true; hasDragged = false; }, { passive: false });
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('mouseup', handleDragEnd);
+    document.addEventListener('touchend', handleDragEnd);
+
+    function cleanupDragListeners() {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('mouseup', handleDragEnd);
+        document.removeEventListener('touchend', handleDragEnd);
+    }
+    currentWatchPickerCleanup = cleanupDragListeners;
+
+    function renderDialNumbers() {
         numbersContainer.innerHTML = '';
         const radius = 95;
         const items = mode === 'hour' ? (is24h ? 24 : 12) : 12;
-        
+
         for (let i = 0; i < items; i++) {
             let label, val;
             let currentRadius = radius;
-            
+
             if (mode === 'hour') {
                 if (is24h) {
-                    val = i; 
+                    val = i;
                     label = i === 0 ? '00' : String(i);
                     if (val === 0 || val > 12) currentRadius = radius - 35;
                 } else {
@@ -731,67 +824,43 @@ function showWatchPicker(initialTime, is24h, onSave) {
                 val = i * 5;
                 label = String(val).padStart(2, '0');
             }
-            
+
             let angleDeg;
-            if (mode === 'hour' && is24h) {
-                angleDeg = (val % 12) * 30;
-            } else if (mode === 'hour') {
+            if (mode === 'hour') {
                 angleDeg = (val % 12) * 30;
             } else {
                 angleDeg = (val / 5) * 30;
             }
-            
+
+            const isInner = is24h && mode === 'hour' && (val === 0 || val > 12);
+            const isActive = mode === 'hour' ? val === h : val === (Math.floor(m / 5) * 5);
+
             const numEl = document.createElement('div');
-            numEl.className = 'wp-number';
-            
-            let isActive = false;
-            if (mode === 'hour' && val === h) {
-                isActive = true;
-            } else if (mode === 'minute' && val === (Math.floor(m/5)*5)) {
-                isActive = true;
-            }
-            
+            numEl.className = 'wp-number' +
+                (isInner ? ' wp-number-inner' : ' wp-number-outer') +
+                (isActive ? ' wp-number-active' : '');
+
             if (isActive) {
                 setHand(angleDeg, radius - currentRadius);
             }
-            
-            numEl.style.position = 'absolute';
-            numEl.style.width = '30px';
-            numEl.style.height = '30px';
-            numEl.style.borderRadius = '50%';
-            numEl.style.display = 'flex';
-            numEl.style.alignItems = 'center';
-            numEl.style.justifyContent = 'center';
-            numEl.style.fontSize = val === 0 || val > 12 ? '0.8rem' : '0.9rem';
-            numEl.style.fontWeight = '700';
-            numEl.style.color = isActive ? 'white' : 'var(--chocolate)';
-            numEl.style.background = isActive ? 'var(--orange-primary)' : 'transparent';
-            numEl.style.cursor = 'pointer';
-            numEl.style.transition = 'background 0.2s';
+
             numEl.textContent = label;
-            
+            numEl.dataset.val = val;
+
             const rad = (angleDeg - 90) * (Math.PI / 180);
             const x = Math.round(currentRadius * Math.cos(rad));
             const y = Math.round(currentRadius * Math.sin(rad));
-            
             numEl.style.left = `calc(50% + ${x}px)`;
             numEl.style.top = `calc(50% + ${y}px)`;
-            numEl.style.transform = 'translate(-50%, -50%)';
-            
-            numEl.addEventListener('mouseenter', () => {
-                if (!isActive) numEl.style.background = 'var(--cream-dark)';
-            });
-            numEl.addEventListener('mouseleave', () => {
-                if (!isActive) numEl.style.background = 'transparent';
-            });
-            
-            numEl.addEventListener('click', () => {
+
+            numEl.addEventListener('click', (e) => {
+                e.stopPropagation();
                 if (mode === 'hour') {
                     h = val;
                     hDisp.textContent = is24h ? String(h).padStart(2, '0') : String(h);
                     mode = 'minute';
-                    hDisp.style.opacity = '0.6';
-                    mDisp.style.opacity = '1';
+                    hDisp.className = 'wp-segment wp-segment-dim';
+                    mDisp.className = 'wp-segment wp-segment-active';
                     setTimeout(() => renderDial(), 50);
                 } else {
                     m = val;
@@ -799,19 +868,39 @@ function showWatchPicker(initialTime, is24h, onSave) {
                     renderDial();
                 }
             });
-            
+
             numbersContainer.appendChild(numEl);
         }
+
+        // In minute mode, show the exact minute marker if not on a 5-min label
+        if (mode === 'minute' && m % 5 !== 0) {
+            setHand(m * 6, 0);
+        }
     }
-    
-    hDisp.addEventListener('click', () => { mode = 'hour'; mDisp.style.opacity = '0.6'; hDisp.style.opacity = '1'; renderDial(); });
-    mDisp.addEventListener('click', () => { mode = 'minute'; hDisp.style.opacity = '0.6'; mDisp.style.opacity = '1'; renderDial(); });
-    
+
+    function renderDial() {
+        renderDialNumbers();
+    }
+
+    hDisp.addEventListener('click', () => {
+        mode = 'hour';
+        mDisp.className = 'wp-segment wp-segment-dim';
+        hDisp.className = 'wp-segment wp-segment-active';
+        renderDial();
+    });
+    mDisp.addEventListener('click', () => {
+        mode = 'minute';
+        hDisp.className = 'wp-segment wp-segment-dim';
+        mDisp.className = 'wp-segment wp-segment-active';
+        renderDial();
+    });
+
     overlay.querySelector('#wp-cancel').addEventListener('click', () => {
+        cleanupDragListeners();
         overlay.remove();
         currentWatchPicker = null;
     });
-    
+
     overlay.querySelector('#wp-ok').addEventListener('click', () => {
         let finalH = h;
         if (!is24h) {
@@ -819,22 +908,23 @@ function showWatchPicker(initialTime, is24h, onSave) {
             if (ampm === 'AM' && finalH === 12) finalH = 0;
         }
         const timeVal = `${String(finalH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        cleanupDragListeners();
         overlay.remove();
         currentWatchPicker = null;
         onSave(timeVal);
     });
-    
+
     renderDial();
 }
 
 function renderEditSessionCard(session) {
-    const fromTime = new Date(session.startTime).toTimeString().slice(0, 5); // HH:MM
-    const toTime = new Date(session.endTime).toTimeString().slice(0, 5); // HH:MM
+    const fromTime = new Date(session.startTime).toTimeString().slice(0, 5);
+    const toTime = new Date(session.endTime).toTimeString().slice(0, 5);
     const is24h = I18n.lang === 'de';
 
     return `
         <div class="card edit-card" id="session-edit-${session.id}">
-            <div class="card-header" style="padding-right: 0;">
+            <div class="card-header">
                 <div class="card-title">${t('editSession')} - ${formatDate(session.date)}</div>
             </div>
             <div class="card-body">
@@ -847,9 +937,9 @@ function renderEditSessionCard(session) {
                     ${createCustomTimePicker(`edit-to-${session.id}`, toTime, is24h)}
                 </div>
             </div>
-            <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-                <button class="btn btn-secondary card-cancel-edit" style="padding: 10px; font-size: 0.85rem;">${t('cancel')}</button>
-                <button class="btn btn-start card-save-edit" data-id="${escapeAttr(session.id)}" style="padding: 10px; font-size: 0.85rem; flex: 1;">${t('save')}</button>
+            <div class="card-actions">
+                <button class="btn btn-secondary card-cancel-edit card-action-btn">${t('cancel')}</button>
+                <button class="btn btn-start card-save-edit card-action-btn card-action-btn-save" data-id="${escapeAttr(session.id)}">${t('save')}</button>
             </div>
         </div>
     `;
@@ -858,33 +948,51 @@ function renderEditSessionCard(session) {
 function saveSessionEdit(id, fromValue, toValue) {
     let sessions = Storage.getSessions();
     const sessionIndex = sessions.findIndex(s => s.id === id);
-    if (sessionIndex !== -1) {
-        const session = sessions[sessionIndex];
-        const dateStr = session.date; 
-        
-        let newStartTs = new Date(`${dateStr}T${fromValue}:00`).getTime();
-        let newEndTs = new Date(`${dateStr}T${toValue}:00`).getTime();
-        
-        if (!isNaN(newStartTs) && !isNaN(newEndTs)) {
-            if (newEndTs < newStartTs) {
-                newEndTs += 24 * 60 * 60 * 1000; 
-            }
-            
-            session.startTime = newStartTs;
-            session.endTime = newEndTs;
-            
-            const totalElapsed = newEndTs - newStartTs;
-            if (session.totalBreak > totalElapsed) {
-                session.totalBreak = 0; 
-                session.breaks = [];
-            }
-            session.totalWork = totalElapsed - session.totalBreak;
-            
-            sessions[sessionIndex] = session;
-            Storage.saveSessions(sessions);
-            showToast(t('sessionUpdated'));
-        }
+    if (sessionIndex === -1) {
+        editingSessionId = null;
+        renderHistoryPage();
+        return;
     }
+
+    const session = sessions[sessionIndex];
+    const dateStr = session.date;
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        showToast(t('sessionUpdateFailed'));
+        editingSessionId = null;
+        renderHistoryPage();
+        return;
+    }
+
+    const newStartTs = new Date(`${dateStr}T${fromValue}:00`).getTime();
+    let newEndTs = new Date(`${dateStr}T${toValue}:00`).getTime();
+
+    if (isNaN(newStartTs) || isNaN(newEndTs)) {
+        showToast(t('sessionUpdateFailed'));
+        editingSessionId = null;
+        renderHistoryPage();
+        return;
+    }
+
+    if (newEndTs <= newStartTs) {
+        newEndTs += 24 * 60 * 60 * 1000;
+    }
+
+    session.startTime = newStartTs;
+    session.endTime = newEndTs;
+
+    const totalElapsed = newEndTs - newStartTs;
+    if (session.totalBreak > totalElapsed) {
+        session.totalBreak = 0;
+        session.breaks = [];
+        showToast(t('breaksReset'));
+    }
+    session.totalWork = totalElapsed - session.totalBreak;
+
+    sessions[sessionIndex] = session;
+    Storage.saveSessions(sessions);
+    showToast(t('sessionUpdated'));
+
     editingSessionId = null;
     renderHistoryPage();
 }

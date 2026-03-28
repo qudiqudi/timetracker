@@ -59,6 +59,8 @@ const I18n = (() => {
             to: 'To',
             save: 'Save',
             sessionUpdated: '✏️ Session updated',
+            sessionUpdateFailed: 'Could not update session',
+            breaksReset: 'Breaks were reset (shorter session)',
 
             // Stats
             statistics: 'Statistics',
@@ -183,6 +185,8 @@ const I18n = (() => {
             to: 'Bis',
             save: 'Speichern',
             sessionUpdated: '✏️ Sitzung aktualisiert',
+            sessionUpdateFailed: 'Sitzung konnte nicht aktualisiert werden',
+            breaksReset: 'Pausen wurden zurückgesetzt (kürzere Sitzung)',
 
             // Stats
             statistics: 'Statistik',

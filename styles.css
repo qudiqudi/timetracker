@@ -562,6 +562,7 @@ body::before {
 
 .native-time-picker {
     display: block;
+    text-align: left;
     border: 2px solid var(--cream-dark);
     border-radius: var(--radius-sm);
     background: var(--white);
@@ -582,6 +583,183 @@ body::before {
 .native-time-picker:focus-within {
     border-color: var(--orange-primary);
 }
+
+/* Watch Picker Modal */
+.watch-picker-modal {
+    padding: 24px;
+    max-width: 320px;
+    overflow: hidden;
+    animation: dialogIn 0.3s var(--transition-bounce) both;
+}
+
+.wp-header {
+    background: var(--orange-primary);
+    color: white;
+    padding: 16px;
+    margin: -32px -24px 16px -24px;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wp-time-display {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.wp-segment {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.wp-segment-active {
+    opacity: 1;
+}
+
+.wp-segment-dim {
+    opacity: 0.6;
+}
+
+.wp-ampm-switch {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.wp-ampm-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.wp-ampm-active {
+    opacity: 1;
+}
+
+.wp-ampm-dim {
+    opacity: 0.5;
+}
+
+.wp-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px 0;
+}
+
+.wp-dial-container {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: var(--cream);
+    margin: 0 auto;
+    user-select: none;
+    touch-action: none;
+}
+
+.wp-center-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: var(--orange-primary);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+.wp-hand {
+    position: absolute;
+    width: 2px;
+    background: var(--orange-primary);
+    bottom: 50%;
+    left: calc(50% - 1px);
+    transform-origin: bottom center;
+    z-index: 5;
+    transition: transform 0.15s ease-out;
+    pointer-events: none;
+}
+
+.wp-numbers {
+    position: absolute;
+    inset: 0;
+}
+
+.wp-number {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--chocolate);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.2s;
+    transform: translate(-50%, -50%);
+}
+
+.wp-number-inner {
+    font-size: 0.8rem;
+}
+
+.wp-number-outer {
+    font-size: 0.9rem;
+}
+
+.wp-number-active {
+    color: white;
+    background: var(--orange-primary);
+}
+
+@media (hover: hover) {
+    .wp-number:not(.wp-number-active):hover {
+        background: var(--cream-dark);
+    }
+}
+
+.wp-actions {
+    margin-top: 24px;
+    justify-content: flex-end;
+}
+
+.wp-action-btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    flex: none;
+}
+
+/* Edit Card */
+.edit-card .card-header {
+    padding-right: 0;
+}
+
+.card-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.card-action-btn {
+    padding: 10px;
+    font-size: 0.85rem;
+}
+
+.card-action-btn-save {
+    flex: 1;
+}
+
 /* --- Empty State --- */
 .empty-state {
     text-align: center;
