@@ -1084,6 +1084,48 @@ body::before {
     font-size: 0.9rem;
 }
 
+/* --- Changelog --- */
+.changelog-dialog {
+    text-align: left;
+}
+
+.changelog-dialog .dialog-emoji {
+    text-align: center;
+}
+
+.changelog-dialog .dialog-title {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.changelog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.changelog-item {
+    background: var(--cream);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--orange-primary);
+}
+
+.changelog-title {
+    font-weight: 800;
+    color: var(--chocolate);
+    margin-bottom: 6px;
+    font-size: 1rem;
+}
+
+.changelog-desc {
+    font-size: 0.85rem;
+    color: var(--brown-warm);
+    line-height: 1.4;
+    opacity: 0.9;
+}
+
 /* --- Filter Bar --- */
 .filter-bar {
     display: flex;

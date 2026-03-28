@@ -1272,5 +1272,40 @@ function showDialog(emoji, title, text, confirmLabel, cancelLabel, onConfirm) {
     });
 }
 
+// ---- Changelog ----
+function showChangelog() {
+    const CHANGELOG_KEY = 'hubi_changelog_v1_seen';
+    if (localStorage.getItem(CHANGELOG_KEY)) return;
+
+    const existing = document.querySelector('.dialog-overlay');
+    if (existing) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'dialog-overlay';
+    overlay.innerHTML = `
+        <div class="dialog changelog-dialog">
+            <div class="dialog-emoji">✨</div>
+            <div class="dialog-title">${t('whatsNew')}</div>
+            <div class="changelog-list">
+                <div class="changelog-item">
+                    <div class="changelog-title">${t('whatsNewEditEntryTitle')}</div>
+                    <div class="changelog-desc">${t('whatsNewEditEntryDesc')}</div>
+                </div>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn btn-start" style="width: 100%;" id="changelog-awesome">${t('awesome')}</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const closeBtn = document.getElementById('changelog-awesome');
+    closeBtn.addEventListener('click', () => {
+        localStorage.setItem(CHANGELOG_KEY, 'true');
+        overlay.remove();
+    });
+}
+
 // ---- Initialize ----
 renderPage();
+showChangelog();

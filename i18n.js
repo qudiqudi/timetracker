@@ -130,6 +130,12 @@ const I18n = (() => {
             manualDataHint: 'Only needed if QR scan is not available',
             qrScanned: 'QR scanned!',
             closeCamera: 'Close camera',
+
+            // Changelog
+            whatsNew: "What's new",
+            whatsNewEditEntryTitle: "✏️ Edit Time Entries",
+            whatsNewEditEntryDesc: "You can now edit the start and end times of your tracking sessions directly from the history tab. Mistakes happen, and Hubi understands!",
+            awesome: "Awesome!",
         },
 
         de: {
@@ -258,6 +264,12 @@ const I18n = (() => {
             manualDataHint: 'Nur nötig, wenn QR-Scan nicht verfügbar ist',
             qrScanned: 'QR gescannt!',
             closeCamera: 'Kamera schließen',
+
+            // Changelog
+            whatsNew: "Was gibt's Neues",
+            whatsNewEditEntryTitle: "✏️ Zeiteneinträge bearbeiten",
+            whatsNewEditEntryDesc: "Du kannst jetzt die Start- und Endzeiten deiner erfassten Sitzungen direkt im Verlauf bearbeiten. Fehler passieren, und Hubi versteht das!",
+            awesome: "Klasse!",
         }
     };
 
