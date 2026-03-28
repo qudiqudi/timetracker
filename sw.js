@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hubi-tracker-v30';
+const CACHE_NAME = 'hubi-tracker-v31';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -15,7 +15,9 @@ const ASSETS_TO_CACHE = [
     './assets/favicon.svg',
     './assets/meow1.mp3',
     './assets/meow2.mp3',
-    './assets/meow3.mp3'
+    './assets/meow3.mp3',
+    './assets/fonts/nunito-latin.woff2',
+    './assets/fonts/nunito-latin-ext.woff2'
 ];
 
 // Install — cache all static assets
@@ -42,24 +44,14 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch — serve from cache, fallback to network
+// Fetch — serve from cache, fallback to network (no dynamic caching)
 self.addEventListener('fetch', (event) => {
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) {
                 return cachedResponse;
             }
-            return fetch(event.request).then((response) => {
-                // Don't cache non-GET requests or external resources
-                if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
-                    return response;
-                }
-                const responseToCache = response.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseToCache);
-                });
-                return response;
-            });
+            return fetch(event.request);
         }).catch(() => {
             // Offline fallback
             return caches.match('./index.html');

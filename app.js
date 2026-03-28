@@ -1251,15 +1251,20 @@ function showDialog(emoji, title, text, confirmLabel, cancelLabel, onConfirm) {
     overlay.className = 'dialog-overlay';
     overlay.innerHTML = `
         <div class="dialog">
-            <div class="dialog-emoji">${emoji}</div>
-            <div class="dialog-title">${title}</div>
-            <div class="dialog-text">${text}</div>
+            <div class="dialog-emoji"></div>
+            <div class="dialog-title"></div>
+            <div class="dialog-text"></div>
             <div class="dialog-actions">
-                <button class="btn btn-secondary" id="dialog-cancel">${cancelLabel}</button>
-                <button class="btn btn-finish" id="dialog-confirm">${confirmLabel}</button>
+                <button class="btn btn-secondary" id="dialog-cancel"></button>
+                <button class="btn btn-finish" id="dialog-confirm"></button>
             </div>
         </div>
     `;
+    overlay.querySelector('.dialog-emoji').textContent = emoji;
+    overlay.querySelector('.dialog-title').textContent = title;
+    overlay.querySelector('.dialog-text').textContent = text;
+    overlay.querySelector('#dialog-cancel').textContent = cancelLabel;
+    overlay.querySelector('#dialog-confirm').textContent = confirmLabel;
     document.body.appendChild(overlay);
 
     document.getElementById('dialog-cancel').addEventListener('click', () => overlay.remove());

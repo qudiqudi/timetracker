@@ -40,12 +40,13 @@ const WORDS = [
     'snowshoe', 'tonkinese', 'sphinx', 'munchkin', 'bambino', 'lykoi', 'devon', 'siberian',
 ];
 
-const SALT = new TextEncoder().encode('hubi-cat-sync');
-const DATA_PREFIX = 'HUBI1:';
+const LEGACY_SALT = new TextEncoder().encode('hubi-cat-sync');
+const LEGACY_PREFIX = 'HUBI1:';
+const DATA_PREFIX = 'HUBI2:';
 
 // ---- Crypto Helpers ----
 
-async function deriveKey(phrase) {
+async function deriveKey(phrase, salt) {
     const keyMaterial = await crypto.subtle.importKey(
         'raw',
         new TextEncoder().encode(phrase),
@@ -54,7 +55,7 @@ async function deriveKey(phrase) {
         ['deriveKey']
     );
     return crypto.subtle.deriveKey(
-        { name: 'PBKDF2', salt: SALT, iterations: 100000, hash: 'SHA-256' },
+        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
         keyMaterial,
         { name: 'AES-GCM', length: 256 },
         false,
@@ -76,26 +77,42 @@ function base64ToBytes(b64) {
 }
 
 async function encryptData(text, phrase) {
-    const key = await deriveKey(phrase);
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const key = await deriveKey(phrase, salt);
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ciphertext = await crypto.subtle.encrypt(
         { name: 'AES-GCM', iv },
         key,
         new TextEncoder().encode(text)
     );
-    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
-    combined.set(iv);
-    combined.set(new Uint8Array(ciphertext), iv.length);
+    // Format: salt (16) + iv (12) + ciphertext
+    const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
+    combined.set(salt);
+    combined.set(iv, salt.length);
+    combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
     return DATA_PREFIX + bytesToBase64(combined);
 }
 
 async function decryptData(blob, phrase) {
+    // Support legacy HUBI1: format (static salt)
+    if (blob.startsWith(LEGACY_PREFIX)) {
+        const raw = blob.slice(LEGACY_PREFIX.length);
+        const bytes = base64ToBytes(raw);
+        const iv = bytes.slice(0, 12);
+        const ciphertext = bytes.slice(12);
+        const key = await deriveKey(phrase, LEGACY_SALT);
+        const plain = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv }, key, ciphertext
+        );
+        return new TextDecoder().decode(plain);
+    }
     if (!blob.startsWith(DATA_PREFIX)) throw new Error('Invalid data format');
     const raw = blob.slice(DATA_PREFIX.length);
     const bytes = base64ToBytes(raw);
-    const iv = bytes.slice(0, 12);
-    const ciphertext = bytes.slice(12);
-    const key = await deriveKey(phrase);
+    const salt = bytes.slice(0, 16);
+    const iv = bytes.slice(16, 28);
+    const ciphertext = bytes.slice(28);
+    const key = await deriveKey(phrase, salt);
     const plain = await crypto.subtle.decrypt(
         { name: 'AES-GCM', iv },
         key,
@@ -330,7 +347,7 @@ async function renderExportPage(appEl) {
 
             <div class="sync-section">
                 <div class="sync-label">${t('encryptedData')}</div>
-                <textarea class="sync-data-area" readonly id="encrypted-data">${encrypted}</textarea>
+                <textarea class="sync-data-area" readonly id="encrypted-data"></textarea>
                 <div class="sync-btn-row">
                     <button class="btn btn-secondary" id="copy-data">${t('copyData')}</button>
                 </div>
@@ -343,6 +360,8 @@ async function renderExportPage(appEl) {
             </button>
         </div>
     `;
+
+    document.getElementById('encrypted-data').value = encrypted;
 
     document.getElementById('copy-phrase').addEventListener('click', () => {
         navigator.clipboard.writeText(phrase).then(() => showToast(t('copied'))).catch(() => {});
@@ -402,7 +421,9 @@ function renderImportPage(appEl) {
 
     document.getElementById('scan-qr').addEventListener('click', () => {
         openScanner(value => {
-            const dataIdx = value.indexOf(DATA_PREFIX);
+            // Find data boundary — support both HUBI1: and HUBI2: prefixes
+            let dataIdx = value.indexOf(DATA_PREFIX);
+            if (dataIdx < 0) dataIdx = value.indexOf(LEGACY_PREFIX);
             if (dataIdx > 0) {
                 const phrase = value.substring(0, dataIdx).replace(/[||\n]/g, '').trim();
                 const data = value.substring(dataIdx);
@@ -421,11 +442,12 @@ function renderImportPage(appEl) {
         let data = scannedData || document.getElementById('import-data').value.replace(/\s/g, '');
 
         // Handle combined QR content landing in the phrase field
-        const hubiIdx = rawPhrase.indexOf('hubi1:');
+        let hubiIdx = rawPhrase.indexOf('hubi2:');
+        if (hubiIdx < 0) hubiIdx = rawPhrase.indexOf('hubi1:');
         if (hubiIdx > 0 && !data) {
             data = rawPhrase.substring(hubiIdx).replace(/\s/g, '');
-            // Fix case: DATA_PREFIX is uppercase
-            data = 'HUBI1:' + data.substring(6);
+            // Fix case: prefix is uppercase
+            data = data.substring(0, 5).toUpperCase() + data.substring(5);
             rawPhrase = rawPhrase.substring(0, hubiIdx).replace(/[|]/g, '').trim();
         }
 
