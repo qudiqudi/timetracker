@@ -238,7 +238,8 @@ const CloudSync = {
     _pushDebounce: null,
     _syncing: false,
     _pendingSync: false,
-    INTERVAL_MS: 5 * 60 * 1000,
+    _lastError: null,
+    INTERVAL_MS: 15 * 60 * 1000,
 
     getPhrase() {
         return localStorage.getItem(SYNC_PHRASE_KEY) || null;
@@ -316,8 +317,10 @@ const CloudSync = {
             await this.pull(phrase);
             await this.push(phrase);
             localStorage.setItem(SYNC_LAST_KEY, new Date().toISOString());
+            this._lastError = null;
         } catch (e) {
             console.warn('Cloud sync failed:', e.message);
+            this._lastError = e.message;
         } finally {
             this._syncing = false;
             if (this._pendingSync) {
@@ -565,13 +568,14 @@ function renderCloudSyncSection() {
     const phrase = CloudSync.getPhrase();
     const phraseWords = phrase.split(' ').map(w => `<span class="sync-phrase-word">${w}</span>`).join('');
     const lastSync = relativeTime(CloudSync.getLastSync());
+    const hasError = !!CloudSync._lastError;
 
     return `
         <div class="cloud-sync-card">
             <div class="sync-label">${t('cloudSync')}</div>
             <div class="cloud-sync-status">
-                <span class="cloud-sync-dot connected"></span>
-                <span>${t('cloudConnected')}</span>
+                <span class="cloud-sync-dot ${hasError ? 'error' : 'connected'}"></span>
+                <span>${hasError ? t('cloudSyncFailed') : t('cloudConnected')}</span>
             </div>
             <div class="sync-phrase">
                 <div class="sync-phrase-words">${phraseWords}</div>

@@ -1792,6 +1792,10 @@ body::before {
     background: #4CAF50;
 }
 
+.cloud-sync-dot.error {
+    background: #e53935;
+}
+
 .cloud-sync-last {
     font-size: 0.8rem;
     color: var(--brown-warm);
