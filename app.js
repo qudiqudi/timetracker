@@ -48,6 +48,7 @@ const Storage = {
 
 // ---- Active Session State ----
 const STATE_KEY = 'hubi_active_state';
+const STATE_CLEARED_KEY = 'hubi_active_cleared_at';
 const ActiveState = {
     get() {
         try {
@@ -58,6 +59,7 @@ const ActiveState = {
     },
     set(state) {
         try {
+            state.updatedAt = Date.now();
             localStorage.setItem(STATE_KEY, JSON.stringify(state));
         } catch {
             // Quota exceeded — active state won't persist across refresh
@@ -65,6 +67,27 @@ const ActiveState = {
     },
     clear() {
         localStorage.removeItem(STATE_KEY);
+        localStorage.setItem(STATE_CLEARED_KEY, String(Date.now()));
+    },
+    getForSync() {
+        const state = this.get();
+        const clearedAt = Number(localStorage.getItem(STATE_CLEARED_KEY)) || 0;
+        const updatedAt = state ? (state.updatedAt || 0) : clearedAt;
+        return { state, updatedAt };
+    },
+    applyFromSync(remote) {
+        if (!remote || !remote.updatedAt) return false;
+        const local = this.getForSync();
+        if (remote.updatedAt > local.updatedAt) {
+            if (remote.state) {
+                localStorage.setItem(STATE_KEY, JSON.stringify(remote.state));
+            } else {
+                localStorage.removeItem(STATE_KEY);
+                localStorage.setItem(STATE_CLEARED_KEY, String(remote.updatedAt));
+            }
+            return true;
+        }
+        return false;
     }
 };
 

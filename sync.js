@@ -40,8 +40,6 @@ const WORDS = [
     'snowshoe', 'tonkinese', 'sphinx', 'munchkin', 'bambino', 'lykoi', 'devon', 'siberian',
 ];
 
-const LEGACY_SALT = new TextEncoder().encode('hubi-cat-sync');
-const LEGACY_PREFIX = 'HUBI1:';
 const DATA_PREFIX = 'HUBI2:';
 
 // ---- Cloud Sync Config ----
@@ -105,18 +103,6 @@ async function encryptData(text, phrase) {
 }
 
 async function decryptData(blob, phrase) {
-    // Support legacy HUBI1: format (static salt)
-    if (blob.startsWith(LEGACY_PREFIX)) {
-        const raw = blob.slice(LEGACY_PREFIX.length);
-        const bytes = base64ToBytes(raw);
-        const iv = bytes.slice(0, 12);
-        const ciphertext = bytes.slice(12);
-        const key = await deriveKey(phrase, LEGACY_SALT);
-        const plain = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv }, key, ciphertext
-        );
-        return new TextDecoder().decode(plain);
-    }
     if (!blob.startsWith(DATA_PREFIX)) throw new Error('Invalid data format');
     const raw = blob.slice(DATA_PREFIX.length);
     const bytes = base64ToBytes(raw);
@@ -246,6 +232,7 @@ function mergeSessions(existing, incoming) {
 const CloudSync = {
     _intervalId: null,
     _pushDebounce: null,
+    _lastEtag: null,
     INTERVAL_MS: 5 * 60 * 1000,
 
     getPhrase() {
@@ -270,16 +257,28 @@ const CloudSync = {
         return localStorage.getItem(SYNC_LAST_KEY) || null;
     },
 
-    async push(phrase) {
+    async push(phrase, _retry) {
         const sessions = Storage.getAllRaw();
-        if (!sessions.length) return;
+        const active = ActiveState.getForSync();
+        if (!sessions.length && !active.state) return;
         const channelId = await phraseToChannel(phrase);
-        const encrypted = await encryptData(JSON.stringify(sessions), phrase);
+        const payload = { sessions, active };
+        const encrypted = await encryptData(JSON.stringify(payload), phrase);
+        const headers = {};
+        if (this._lastEtag) headers['If-Match'] = this._lastEtag;
         const res = await fetch(`${SYNC_API}/sync/${channelId}`, {
             method: 'PUT',
+            headers,
             body: encrypted,
         });
+        if (res.status === 409 && !_retry) {
+            // Conflict -- pull fresh data and retry once
+            await this.pull(phrase);
+            return this.push(phrase, true);
+        }
         if (!res.ok) throw new Error(`Push failed: ${res.status}`);
+        const etag = res.headers.get('ETag');
+        if (etag) this._lastEtag = etag;
     },
 
     async pull(phrase) {
@@ -287,13 +286,25 @@ const CloudSync = {
         const res = await fetch(`${SYNC_API}/sync/${channelId}`);
         if (res.status === 404) return 0;
         if (!res.ok) throw new Error(`Pull failed: ${res.status}`);
+        const etag = res.headers.get('ETag');
+        if (etag) this._lastEtag = etag;
         const blob = await res.text();
         if (!blob) return 0;
         const decrypted = await decryptData(blob, phrase);
-        const incoming = sanitizeSessions(JSON.parse(decrypted));
+        const parsed = JSON.parse(decrypted);
+        // Backwards compat: old blobs are plain arrays
+        const incomingSessions = Array.isArray(parsed) ? parsed : (parsed.sessions || []);
+        const incomingActive = Array.isArray(parsed) ? null : (parsed.active || null);
+        const incoming = sanitizeSessions(incomingSessions);
         const existing = Storage.getAllRaw();
         const { merged, newCount } = mergeSessions(existing, incoming);
         Storage.saveSessions(merged);
+        if (incomingActive && ActiveState.applyFromSync(incomingActive)) {
+            // Re-render timer page if active state changed and we're viewing it
+            if (typeof currentPage !== 'undefined' && currentPage === 'timer') {
+                renderTimerPage();
+            }
+        }
         return newCount;
     },
 
@@ -334,6 +345,18 @@ const CloudSync = {
 const _origSave = Storage.saveSessions.bind(Storage);
 Storage.saveSessions = function(sessions) {
     _origSave(sessions);
+    CloudSync.schedulePush();
+};
+
+// Monkey-patch ActiveState to trigger cloud sync on timer changes
+const _origActiveSet = ActiveState.set.bind(ActiveState);
+ActiveState.set = function(state) {
+    _origActiveSet(state);
+    CloudSync.schedulePush();
+};
+const _origActiveClear = ActiveState.clear.bind(ActiveState);
+ActiveState.clear = function() {
+    _origActiveClear();
     CloudSync.schedulePush();
 };
 
@@ -651,7 +674,8 @@ async function renderExportPage(appEl) {
     const phrase = generatePhrase();
     let encrypted;
     try {
-        encrypted = await encryptData(JSON.stringify(sessions), phrase);
+        const payload = { sessions, active: ActiveState.getForSync() };
+        encrypted = await encryptData(JSON.stringify(payload), phrase);
     } catch {
         showToast(t('decryptFailed'));
         return;
@@ -766,9 +790,7 @@ function renderImportPage(appEl) {
 
     document.getElementById('scan-qr').addEventListener('click', () => {
         openScanner(value => {
-            // Find data boundary — support both HUBI1: and HUBI2: prefixes
-            let dataIdx = value.indexOf(DATA_PREFIX);
-            if (dataIdx < 0) dataIdx = value.indexOf(LEGACY_PREFIX);
+            const dataIdx = value.indexOf(DATA_PREFIX);
             if (dataIdx > 0) {
                 const phrase = value.substring(0, dataIdx).replace(/[||\n]/g, '').trim();
                 const data = value.substring(dataIdx);
@@ -788,8 +810,7 @@ function renderImportPage(appEl) {
 
         // Handle combined QR content landing in the phrase field
         const lowerInput = rawInput.toLowerCase();
-        let hubiIdx = lowerInput.indexOf('hubi2:');
-        if (hubiIdx < 0) hubiIdx = lowerInput.indexOf('hubi1:');
+        const hubiIdx = lowerInput.indexOf('hubi2:');
         let rawPhrase;
         if (hubiIdx > 0 && !data) {
             data = rawInput.substring(hubiIdx).replace(/\s/g, '');
@@ -820,17 +841,21 @@ function renderImportPage(appEl) {
             return;
         }
 
-        let incoming;
+        let incomingSessions, incomingActive;
         try {
-            incoming = sanitizeSessions(JSON.parse(decrypted));
+            const parsed = JSON.parse(decrypted);
+            // Backwards compat: old exports are plain arrays
+            incomingSessions = sanitizeSessions(Array.isArray(parsed) ? parsed : (parsed.sessions || []));
+            incomingActive = Array.isArray(parsed) ? null : (parsed.active || null);
         } catch {
             showToast(t('decryptFailed'));
             return;
         }
 
         const existing = Storage.getAllRaw();
-        const { merged, newCount } = mergeSessions(existing, incoming);
+        const { merged, newCount } = mergeSessions(existing, incomingSessions);
         Storage.saveSessions(merged);
+        if (incomingActive) ActiveState.applyFromSync(incomingActive);
 
         if (newCount > 0) {
             showToast(t('importSuccess')(newCount));
