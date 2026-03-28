@@ -882,6 +882,13 @@ function renderImportPage(appEl) {
 // Start auto-sync if previously paired
 CloudSync.startAutoSync();
 
+// Sync when app returns to foreground (catches interrupted pushes on mobile)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && CloudSync.isPaired()) {
+        CloudSync.sync();
+    }
+});
+
 return { renderSyncPage, CloudSync };
 
 })();
