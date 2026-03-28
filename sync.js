@@ -281,7 +281,6 @@ const CloudSync = {
         });
         if (res.status === 409 && !_retry) {
             // Conflict -- pull fresh data, adopt server ETag, and retry once
-            this._setEtag(res.headers.get('ETag'));
             await this.pull(phrase);
             return this.push(phrase, true);
         }
@@ -293,13 +292,19 @@ const CloudSync = {
         if (etag) {
             this._lastEtag = etag;
             localStorage.setItem(SYNC_ETAG_KEY, etag);
+        } else {
+            this._lastEtag = null;
+            localStorage.removeItem(SYNC_ETAG_KEY);
         }
     },
 
     async pull(phrase) {
         const channelId = await phraseToChannel(phrase);
         const res = await fetch(`${SYNC_API}/sync/${channelId}`);
-        if (res.status === 404) return 0;
+        if (res.status === 404) {
+            this._setEtag(null);
+            return 0;
+        }
         if (!res.ok) throw new Error(`Pull failed: ${res.status}`);
         this._setEtag(res.headers.get('ETag'));
         const blob = await res.text();
