@@ -1805,6 +1805,45 @@ body::before {
     border-top: 1px solid var(--orange-light);
 }
 
+/* --- Phrase Autocomplete --- */
+.phrase-ac-wrapper {
+    position: relative;
+}
+
+.phrase-ac-dropdown {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 50;
+    background: var(--white);
+    border: 2px solid var(--orange-light);
+    border-top: none;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.phrase-ac-dropdown.visible {
+    display: block;
+}
+
+.phrase-ac-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    color: var(--brown-dark);
+}
+
+.phrase-ac-item:hover,
+.phrase-ac-item.active {
+    background: var(--cream);
+    color: var(--orange);
+}
+
 /* --- Hubi Zone (mobile pet area) --- */
 #hubi-zone {
     display: none;

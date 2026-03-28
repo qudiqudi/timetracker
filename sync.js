@@ -11,13 +11,13 @@ const WORDS = [
     'siamese', 'bengal', 'ragdoll', 'sphynx', 'persian', 'claw', 'paw', 'tail',
     'fur', 'belly', 'nose', 'ear', 'scratch', 'groom', 'hiss', 'chirp',
     'trill', 'knead', 'loaf', 'zoomie', 'treat', 'kibble', 'litter', 'collar',
-    'bell', 'mouse', 'feather', 'laser', 'box', 'basket', 'perch', 'windowsill',
+    'jingle', 'mouse', 'feather', 'laser', 'box', 'basket', 'perch', 'windowsill',
     'sunbeam', 'cuddle', 'nap', 'prowl', 'stalk', 'leap', 'climb', 'hide',
     'peek', 'blink', 'wink', 'mew', 'mrow', 'yawn', 'arch', 'rub',
     'bump', 'chase', 'catch', 'bat', 'swat', 'roll', 'curl', 'tuck',
     'nestle', 'snuggle', 'cozy', 'warm', 'soft', 'gentle', 'playful', 'lazy',
-    'sleepy', 'frisky', 'curious', 'fluffy', 'chonky', 'smol', 'beans', 'toe',
-    'whiskers', 'stripe', 'spot', 'patch', 'ginger', 'orange', 'cream', 'smoke',
+    'sleepy', 'frisky', 'curious', 'plump', 'chonky', 'smol', 'beans', 'toe',
+    'tabletop', 'stripe', 'spot', 'patch', 'ginger', 'orange', 'cream', 'smoke',
     'silver', 'marble', 'tortie', 'tuxedo', 'bicolor', 'tabitha', 'felix', 'garfield',
     'muffin', 'biscuit', 'cookie', 'waffle', 'pancake', 'donut', 'cupcake', 'sprinkle',
     'cheddar', 'nacho', 'pretzel', 'olive', 'peach', 'mango', 'lemon', 'clover',
@@ -28,10 +28,10 @@ const WORDS = [
     'tiptoe', 'slinky', 'velvet', 'plush', 'fuzzy', 'downy', 'silky', 'dapple',
     'freckle', 'speckle', 'blaze', 'rusty', 'sandy', 'dusty', 'smoky', 'inky',
     'sooty', 'cocoa', 'mocha', 'latte', 'espresso', 'truffle', 'nutmeg', 'cinnamon',
-    'paprika', 'saffron', 'pepper', 'basil', 'thyme', 'rosemary', 'clove', 'fennel',
+    'paprika', 'saffron', 'pepper', 'basil', 'thyme', 'rosemary', 'cardamom', 'fennel',
     'bramble', 'thistle', 'ivy', 'juniper', 'cedar', 'aspen', 'birch', 'rowan',
     'hazel', 'acorn', 'chestnut', 'walnut', 'almond', 'cobalt', 'indigo', 'scarlet',
-    'amber', 'coral', 'jade', 'pearl', 'opal', 'ruby', 'onyx', 'flint',
+    'amber', 'coral', 'jade', 'pearl', 'opal', 'garnet', 'onyx', 'flint',
     'pudding', 'crumpet', 'scone', 'toffee', 'fudge', 'taffy', 'jellybean', 'gumdrop',
     'marzipan', 'nougat', 'caramel', 'butterscotch', 'licorice', 'marshmallow', 'bonbon', 'praline',
     'bobcat', 'lynx', 'ocelot', 'panther', 'cougar', 'cheetah', 'jaguar', 'leopard',
@@ -390,6 +390,100 @@ function openScanner(onResult) {
         });
 }
 
+// ---- Phrase Autocomplete ----
+
+function attachPhraseAutocomplete(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    // Wrap input in a relative container for positioning the dropdown
+    const wrapper = document.createElement('div');
+    wrapper.className = 'phrase-ac-wrapper';
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'phrase-ac-dropdown';
+    wrapper.appendChild(dropdown);
+
+    let selectedIdx = -1;
+
+    function getCurrentWord() {
+        const val = input.value.toLowerCase();
+        const words = val.split(/\s/);
+        return words[words.length - 1] || '';
+    }
+
+    function showSuggestions() {
+        const partial = getCurrentWord();
+        dropdown.innerHTML = '';
+        selectedIdx = -1;
+        if (partial.length < 1) { dropdown.classList.remove('visible'); return; }
+
+        const matches = WORDS.filter(w => w.startsWith(partial)).slice(0, 6);
+        if (!matches.length || (matches.length === 1 && matches[0] === partial)) {
+            dropdown.classList.remove('visible');
+            return;
+        }
+
+        for (let i = 0; i < matches.length; i++) {
+            const item = document.createElement('div');
+            item.className = 'phrase-ac-item';
+            item.textContent = matches[i];
+            item.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                acceptSuggestion(matches[i]);
+            });
+            dropdown.appendChild(item);
+        }
+        dropdown.classList.add('visible');
+    }
+
+    function acceptSuggestion(word) {
+        const val = input.value;
+        const words = val.split(/\s/);
+        words[words.length - 1] = word;
+        const count = words.filter(w => WORDS.includes(w.toLowerCase())).length;
+        input.value = words.join(' ') + (count < 12 ? ' ' : '');
+        dropdown.classList.remove('visible');
+        input.focus();
+    }
+
+    function highlightItem(idx) {
+        const items = dropdown.querySelectorAll('.phrase-ac-item');
+        items.forEach((el, i) => el.classList.toggle('active', i === idx));
+    }
+
+    input.addEventListener('input', showSuggestions);
+    input.addEventListener('blur', () => {
+        setTimeout(() => dropdown.classList.remove('visible'), 150);
+    });
+    input.addEventListener('focus', showSuggestions);
+
+    input.addEventListener('keydown', (e) => {
+        const items = dropdown.querySelectorAll('.phrase-ac-item');
+        if (!items.length || !dropdown.classList.contains('visible')) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIdx = Math.min(selectedIdx + 1, items.length - 1);
+            highlightItem(selectedIdx);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIdx = Math.max(selectedIdx - 1, 0);
+            highlightItem(selectedIdx);
+        } else if (e.key === 'Tab' || e.key === 'Enter') {
+            if (selectedIdx >= 0) {
+                e.preventDefault();
+                acceptSuggestion(items[selectedIdx].textContent);
+            } else if (items.length > 0) {
+                e.preventDefault();
+                acceptSuggestion(items[0].textContent);
+            }
+        }
+    });
+}
+
 // ---- Relative Time Helper ----
 
 function relativeTime(isoStr) {
@@ -531,6 +625,7 @@ function renderSyncPage(appEl) {
     `;
 
     attachCloudSyncListeners(appEl);
+    attachPhraseAutocomplete('cloud-phrase-input');
     document.getElementById('sync-export').addEventListener('click', () => renderExportPage(appEl));
     document.getElementById('sync-import').addEventListener('click', () => renderImportPage(appEl));
     document.getElementById('sync-csv').addEventListener('click', exportCSV);
@@ -656,6 +751,8 @@ function renderImportPage(appEl) {
             </div>
         </div>
     `;
+
+    attachPhraseAutocomplete('import-phrase');
 
     document.getElementById('scan-qr').addEventListener('click', () => {
         openScanner(value => {
