@@ -1092,8 +1092,13 @@ body::before {
     margin-bottom: 16px;
 }
 
-.filter-bar input[type="date"] {
+.filter-date-wrap {
     flex: 1;
+    position: relative;
+}
+
+.filter-date-btn {
+    width: 100%;
     padding: 10px 14px;
     border: 2px solid var(--cream-dark);
     border-radius: var(--radius-sm);
@@ -1103,12 +1108,24 @@ body::before {
     color: var(--chocolate);
     background: var(--white);
     outline: none;
+    cursor: pointer;
+    text-align: left;
     transition: border-color 0.3s;
 }
 
-.filter-bar input[type="date"]:focus {
+.filter-date-btn:focus,
+.filter-date-btn:active {
     border-color: var(--orange-primary);
 }
+
+.filter-date-hidden {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
 
 .filter-clear {
     padding: 10px 14px;

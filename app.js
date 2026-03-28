@@ -92,6 +92,12 @@ function formatDate(dateStr) {
     return d.toLocaleDateString(I18n.getLocale(), options);
 }
 
+function formatFilterDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString(I18n.getLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 function formatTime(timestamp) {
     return new Date(timestamp).toLocaleTimeString(I18n.getLocale(), { hour: '2-digit', minute: '2-digit' });
 }
@@ -457,8 +463,16 @@ function showSessionSummary(session) {
 }
 
 // ---- History Page ----
-let historyFilterFrom = '';
-let historyFilterTo = '';
+function getCurrentMonthRange() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+    return { from: `${y}-${m}-01`, to: `${y}-${m}-${String(lastDay).padStart(2, '0')}` };
+}
+const defaultRange = getCurrentMonthRange();
+let historyFilterFrom = defaultRange.from;
+let historyFilterTo = defaultRange.to;
 let editingSessionId = null;
 
 function renderHistoryPage() {
@@ -472,7 +486,8 @@ function renderHistoryPage() {
         sessions = sessions.filter(s => s.date <= historyFilterTo);
     }
 
-    const hasFilters = historyFilterFrom || historyFilterTo;
+    const defRange = getCurrentMonthRange();
+    const hasFilters = historyFilterFrom !== defRange.from || historyFilterTo !== defRange.to;
 
     appEl.innerHTML = `
         <div class="page">
@@ -484,8 +499,14 @@ function renderHistoryPage() {
             </div>
 
             <div class="filter-bar">
-                <input type="date" id="filter-from" value="${historyFilterFrom}" placeholder="From">
-                <input type="date" id="filter-to" value="${historyFilterTo}" placeholder="To">
+                <div class="filter-date-wrap">
+                    <button type="button" class="filter-date-btn" id="filter-from-btn">${formatFilterDate(historyFilterFrom)}</button>
+                    <input type="date" id="filter-from" value="${historyFilterFrom}" class="filter-date-hidden">
+                </div>
+                <div class="filter-date-wrap">
+                    <button type="button" class="filter-date-btn" id="filter-to-btn">${formatFilterDate(historyFilterTo)}</button>
+                    <input type="date" id="filter-to" value="${historyFilterTo}" class="filter-date-hidden">
+                </div>
                 ${hasFilters ? '<button class="filter-clear" id="filter-clear">✕</button>' : ''}
             </div>
 
@@ -496,19 +517,28 @@ function renderHistoryPage() {
     `;
 
     // Filter listeners
-    document.getElementById('filter-from').addEventListener('change', (e) => {
+    const fromInput = document.getElementById('filter-from');
+    const toInput = document.getElementById('filter-to');
+    document.getElementById('filter-from-btn').addEventListener('click', () => {
+        fromInput.showPicker();
+    });
+    document.getElementById('filter-to-btn').addEventListener('click', () => {
+        toInput.showPicker();
+    });
+    fromInput.addEventListener('change', (e) => {
         historyFilterFrom = e.target.value;
         renderHistoryPage();
     });
-    document.getElementById('filter-to').addEventListener('change', (e) => {
+    toInput.addEventListener('change', (e) => {
         historyFilterTo = e.target.value;
         renderHistoryPage();
     });
     const clearBtn = document.getElementById('filter-clear');
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
-            historyFilterFrom = '';
-            historyFilterTo = '';
+            const r = getCurrentMonthRange();
+            historyFilterFrom = r.from;
+            historyFilterTo = r.to;
             renderHistoryPage();
         });
     }
