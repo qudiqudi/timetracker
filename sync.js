@@ -237,6 +237,7 @@ function mergeSessions(existing, incoming) {
 const CloudSync = {
     _intervalId: null,
     _pushDebounce: null,
+    _syncing: false,
     _lastEtag: localStorage.getItem(SYNC_ETAG_KEY) || null,
     INTERVAL_MS: 5 * 60 * 1000,
 
@@ -279,7 +280,8 @@ const CloudSync = {
             body: encrypted,
         });
         if (res.status === 409 && !_retry) {
-            // Conflict -- pull fresh data and retry once
+            // Conflict -- pull fresh data, adopt server ETag, and retry once
+            this._setEtag(res.headers.get('ETag'));
             await this.pull(phrase);
             return this.push(phrase, true);
         }
@@ -324,14 +326,18 @@ const CloudSync = {
     },
 
     async sync() {
+        if (this._syncing) return;
         const phrase = this.getPhrase();
         if (!phrase) return;
+        this._syncing = true;
         try {
             await this.pull(phrase);
             await this.push(phrase);
             localStorage.setItem(SYNC_LAST_KEY, new Date().toISOString());
         } catch (e) {
             console.warn('Cloud sync failed:', e.message);
+        } finally {
+            this._syncing = false;
         }
     },
 
