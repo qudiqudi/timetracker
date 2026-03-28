@@ -10,9 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Open `index.html` in a browser. No build step, no dev server required. For service worker testing or the dev menu, use a local HTTP server (e.g., `python3 -m http.server 8000`). The dev menu auto-loads on localhost and provides buttons to trigger each pet animation state and the treat sequence.
 
-## Deployment
+## Hosting & Deployment
 
-Pushes to `main` auto-deploy to GitHub Pages via `.github/workflows/deploy.yml`. The workflow removes dev-only files (`dev.js`) and the `worker/` directory, then uploads the repo root as a static site. The Cloudflare Worker (`worker/`) is deployed separately via `wrangler deploy` from the `worker/` directory.
+The app is hosted at `https://hubi.work`. Domain is registered via Cloudflare Registrar, DNS points to GitHub Pages (A records, DNS-only / not proxied).
+
+- **Frontend**: GitHub Pages. Pushes to `main` auto-deploy via `.github/workflows/deploy.yml`. The workflow removes dev-only files (`dev.js`) and the `worker/` directory, then uploads the repo root as a static site. The `CNAME` file in the repo root tells GitHub Pages to serve on `hubi.work`.
+- **Sync API**: Cloudflare Worker at `sync.hubi.work` (custom domain on the worker). Deployed separately via `wrangler deploy` from the `worker/` directory.
 
 ## Architecture
 
