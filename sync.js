@@ -438,18 +438,22 @@ function renderImportPage(appEl) {
     });
 
     document.getElementById('do-import').addEventListener('click', async () => {
-        let rawPhrase = document.getElementById('import-phrase').value.trim().toLowerCase();
+        let rawInput = document.getElementById('import-phrase').value.trim();
         let data = scannedData || document.getElementById('import-data').value.replace(/\s/g, '');
 
         // Handle combined QR content landing in the phrase field
-        let hubiIdx = rawPhrase.indexOf('hubi2:');
-        if (hubiIdx < 0) hubiIdx = rawPhrase.indexOf('hubi1:');
+        const lowerInput = rawInput.toLowerCase();
+        let hubiIdx = lowerInput.indexOf('hubi2:');
+        if (hubiIdx < 0) hubiIdx = lowerInput.indexOf('hubi1:');
+        let rawPhrase;
         if (hubiIdx > 0 && !data) {
-            data = rawPhrase.substring(hubiIdx).replace(/\s/g, '');
-            // Fix case: prefix (e.g. "HUBI2:") is uppercase
+            data = rawInput.substring(hubiIdx).replace(/\s/g, '');
+            // Normalize prefix to uppercase (e.g. "hubi2:" -> "HUBI2:"), preserve base64 case
             const colonIdx = data.indexOf(':');
             data = data.substring(0, colonIdx).toUpperCase() + data.substring(colonIdx);
-            rawPhrase = rawPhrase.substring(0, hubiIdx).replace(/[|]/g, '').trim();
+            rawPhrase = rawInput.substring(0, hubiIdx).replace(/[|]/g, '').trim().toLowerCase();
+        } else {
+            rawPhrase = rawInput.toLowerCase();
         }
 
         const phrase = rawPhrase.split(/\s+/).join(' ');
