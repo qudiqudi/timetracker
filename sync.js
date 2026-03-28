@@ -46,7 +46,6 @@ const DATA_PREFIX = 'HUBI2:';
 const SYNC_API = 'https://sync.hubi.work';
 const SYNC_PHRASE_KEY = 'hubi_sync_phrase';
 const SYNC_LAST_KEY = 'hubi_sync_last';
-const SYNC_ETAG_KEY = 'hubi_sync_etag';
 
 // ---- Crypto Helpers ----
 
@@ -239,7 +238,6 @@ const CloudSync = {
     _pushDebounce: null,
     _syncing: false,
     _pendingSync: false,
-    _lastEtag: localStorage.getItem(SYNC_ETAG_KEY) || null,
     INTERVAL_MS: 5 * 60 * 1000,
 
     getPhrase() {
@@ -253,8 +251,6 @@ const CloudSync = {
     clearPhrase() {
         localStorage.removeItem(SYNC_PHRASE_KEY);
         localStorage.removeItem(SYNC_LAST_KEY);
-        localStorage.removeItem(SYNC_ETAG_KEY);
-        this._lastEtag = null;
         this.stopAutoSync();
     },
 
@@ -266,50 +262,25 @@ const CloudSync = {
         return localStorage.getItem(SYNC_LAST_KEY) || null;
     },
 
-    async push(phrase, _attempt) {
-        const attempt = _attempt || 0;
+    async push(phrase) {
         const sessions = Storage.getAllRaw();
         const active = ActiveState.getForSync();
         if (!sessions.length && !active.state) return;
         const channelId = await phraseToChannel(phrase);
         const payload = { sessions, active };
         const encrypted = await encryptData(JSON.stringify(payload), phrase);
-        const headers = {};
-        if (this._lastEtag) headers['If-Match'] = this._lastEtag;
         const res = await fetch(`${SYNC_API}/sync/${channelId}`, {
             method: 'PUT',
-            headers,
             body: encrypted,
         });
-        if (res.status === 409 && attempt < 3) {
-            // Conflict -- pull fresh data, merge, back off briefly, retry
-            await this.pull(phrase);
-            if (attempt > 0) await new Promise(r => setTimeout(r, 500 * attempt));
-            return this.push(phrase, attempt + 1);
-        }
         if (!res.ok) throw new Error(`Push failed: ${res.status}`);
-        this._setEtag(res.headers.get('ETag'));
-    },
-
-    _setEtag(etag) {
-        if (etag) {
-            this._lastEtag = etag;
-            localStorage.setItem(SYNC_ETAG_KEY, etag);
-        } else {
-            this._lastEtag = null;
-            localStorage.removeItem(SYNC_ETAG_KEY);
-        }
     },
 
     async pull(phrase) {
         const channelId = await phraseToChannel(phrase);
         const res = await fetch(`${SYNC_API}/sync/${channelId}`, { cache: 'no-store' });
-        if (res.status === 404) {
-            this._setEtag(null);
-            return 0;
-        }
+        if (res.status === 404) return 0;
         if (!res.ok) throw new Error(`Pull failed: ${res.status}`);
-        this._setEtag(res.headers.get('ETag'));
         const blob = await res.text();
         if (!blob) return 0;
         const decrypted = await decryptData(blob, phrase);

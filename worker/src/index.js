@@ -10,8 +10,7 @@ function corsHeaders(request) {
 	return {
 		'Access-Control-Allow-Origin': origin,
 		'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-		'Access-Control-Allow-Headers': 'Content-Type, If-Match',
-		'Access-Control-Expose-Headers': 'ETag',
+		'Access-Control-Allow-Headers': 'Content-Type',
 		'Vary': 'Origin',
 	};
 }
@@ -51,36 +50,16 @@ export default {
 			if (body.length > 512 * 1024) return new Response('Too large', { status: 413, headers });
 			if (!body.startsWith('HUBI2:')) return new Response('Invalid format', { status: 400, headers });
 
-			// ETag-based compare-and-swap
-			const ifMatch = request.headers.get('If-Match');
-			if (ifMatch) {
-				const existing = await env.SYNC_KV.get(key);
-				if (existing !== null) {
-					const currentEtag = await computeEtag(existing);
-					if (ifMatch !== currentEtag) {
-						return new Response('Conflict', { status: 409, headers: { ...headers, 'ETag': currentEtag } });
-					}
-				}
-			}
-
 			await env.SYNC_KV.put(key, body, { expirationTtl: 30 * 86400 });
-			const etag = await computeEtag(body);
-			return new Response(null, { status: 204, headers: { ...headers, 'ETag': etag } });
+			return new Response(null, { status: 204, headers });
 		}
 
 		if (request.method === 'GET') {
 			const val = await env.SYNC_KV.get(key);
 			if (!val) return new Response('', { status: 404, headers });
-			const etag = await computeEtag(val);
-			return new Response(val, { headers: { ...headers, 'Content-Type': 'text/plain', 'ETag': etag } });
+			return new Response(val, { headers: { ...headers, 'Content-Type': 'text/plain' } });
 		}
 
 		return new Response('Method not allowed', { status: 405, headers });
 	}
 };
-
-async function computeEtag(body) {
-	const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body));
-	const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-	return `"${hex.slice(0, 16)}"`;
-}
