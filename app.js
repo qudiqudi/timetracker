@@ -10,12 +10,15 @@ if ('serviceWorker' in navigator) {
 // ---- Storage Helper ----
 const Storage = {
     KEY: 'hubi_sessions',
-    getSessions() {
+    getAllRaw() {
         try {
             return JSON.parse(localStorage.getItem(this.KEY)) || [];
         } catch {
             return [];
         }
+    },
+    getSessions() {
+        return this.getAllRaw().filter(s => !s.deletedAt);
     },
     saveSessions(sessions) {
         try {
@@ -27,13 +30,19 @@ const Storage = {
         }
     },
     addSession(session) {
-        const sessions = this.getSessions();
+        session.updatedAt = Date.now();
+        const sessions = this.getAllRaw();
         sessions.unshift(session);
         this.saveSessions(sessions);
     },
     deleteSession(id) {
-        const sessions = this.getSessions().filter(s => s.id !== id);
-        this.saveSessions(sessions);
+        const sessions = this.getAllRaw();
+        const target = sessions.find(s => s.id === id);
+        if (target) {
+            target.deletedAt = Date.now();
+            target.updatedAt = Date.now();
+            this.saveSessions(sessions);
+        }
     }
 };
 

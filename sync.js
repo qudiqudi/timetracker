@@ -153,15 +153,20 @@ function sanitizeSessions(incoming) {
         s && typeof s.id === 'string' &&
         typeof s.startTime === 'number' &&
         typeof s.endTime === 'number'
-    ).map(s => ({
-        id: String(s.id).replace(/[^a-z0-9]/gi, '').slice(0, 30),
-        date: typeof s.date === 'string' ? s.date.replace(/[^0-9-]/g, '').slice(0, 10) : new Date(s.startTime).toISOString().split('T')[0],
-        startTime: Number(s.startTime),
-        endTime: Number(s.endTime),
-        breaks: Array.isArray(s.breaks) ? s.breaks.filter(b => typeof b.start === 'number' && typeof b.end === 'number').map(b => ({ start: Number(b.start), end: Number(b.end) })) : [],
-        totalWork: typeof s.totalWork === 'number' ? Number(s.totalWork) : 0,
-        totalBreak: typeof s.totalBreak === 'number' ? Number(s.totalBreak) : 0,
-    }));
+    ).map(s => {
+        const out = {
+            id: String(s.id).replace(/[^a-z0-9]/gi, '').slice(0, 30),
+            date: typeof s.date === 'string' ? s.date.replace(/[^0-9-]/g, '').slice(0, 10) : new Date(s.startTime).toISOString().split('T')[0],
+            startTime: Number(s.startTime),
+            endTime: Number(s.endTime),
+            breaks: Array.isArray(s.breaks) ? s.breaks.filter(b => typeof b.start === 'number' && typeof b.end === 'number').map(b => ({ start: Number(b.start), end: Number(b.end) })) : [],
+            totalWork: typeof s.totalWork === 'number' ? Number(s.totalWork) : 0,
+            totalBreak: typeof s.totalBreak === 'number' ? Number(s.totalBreak) : 0,
+        };
+        if (typeof s.updatedAt === 'number') out.updatedAt = s.updatedAt;
+        if (typeof s.deletedAt === 'number') out.deletedAt = s.deletedAt;
+        return out;
+    });
 }
 
 // ---- CSV Export ----
@@ -220,9 +225,14 @@ function mergeSessions(existing, incoming) {
         const have = map.get(s.id);
         if (!have) {
             map.set(s.id, s);
-            newCount++;
-        } else if (s.endTime && (!have.endTime || s.endTime > have.endTime)) {
+            if (!s.deletedAt) newCount++;
+        } else if ((s.updatedAt || 0) > (have.updatedAt || 0)) {
             map.set(s.id, s);
+        } else if (!s.updatedAt && !have.updatedAt) {
+            // Legacy sessions without updatedAt: keep later endTime
+            if (s.endTime && (!have.endTime || s.endTime > have.endTime)) {
+                map.set(s.id, s);
+            }
         }
     }
 
@@ -261,7 +271,7 @@ const CloudSync = {
     },
 
     async push(phrase) {
-        const sessions = Storage.getSessions();
+        const sessions = Storage.getAllRaw();
         if (!sessions.length) return;
         const channelId = await phraseToChannel(phrase);
         const encrypted = await encryptData(JSON.stringify(sessions), phrase);
@@ -281,9 +291,9 @@ const CloudSync = {
         if (!blob) return 0;
         const decrypted = await decryptData(blob, phrase);
         const incoming = sanitizeSessions(JSON.parse(decrypted));
-        const existing = Storage.getSessions();
+        const existing = Storage.getAllRaw();
         const { merged, newCount } = mergeSessions(existing, incoming);
-        if (newCount > 0) Storage.saveSessions(merged);
+        Storage.saveSessions(merged);
         return newCount;
     },
 
@@ -632,8 +642,8 @@ function renderSyncPage(appEl) {
 }
 
 async function renderExportPage(appEl) {
-    const sessions = Storage.getSessions();
-    if (!sessions.length) {
+    const sessions = Storage.getAllRaw();
+    if (!sessions.filter(s => !s.deletedAt).length) {
         showToast(t('noSessions'));
         return;
     }
@@ -818,7 +828,7 @@ function renderImportPage(appEl) {
             return;
         }
 
-        const existing = Storage.getSessions();
+        const existing = Storage.getAllRaw();
         const { merged, newCount } = mergeSessions(existing, incoming);
         Storage.saveSessions(merged);
 
