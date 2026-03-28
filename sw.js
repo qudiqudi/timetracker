@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hubi-tracker-v35';
+const CACHE_NAME = 'hubi-tracker-v36';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -24,7 +24,21 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
+            return Promise.all(
+                ASSETS_TO_CACHE.map(async (asset) => {
+                    try {
+                        const request = new Request(asset, { cache: 'reload' }); // bypass HTTP cache to prevent 206 from disk cache
+                        const response = await fetch(request);
+                        if (response.status === 200) {
+                            await cache.put(asset, response);
+                        } else {
+                            console.warn(`[Service Worker] Not caching ${asset} (status: ${response.status})`);
+                        }
+                    } catch (error) {
+                        console.error(`[Service Worker] Failed to cache ${asset}:`, error);
+                    }
+                })
+            );
         })
     );
     self.skipWaiting();
@@ -46,6 +60,12 @@ self.addEventListener('activate', (event) => {
 
 // Fetch — serve from cache, fallback to network (no dynamic caching)
 self.addEventListener('fetch', (event) => {
+    // Bypass cache for media requests that require a Range (Safari/iOS audio fix)
+    if (event.request.headers.get('range')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) {
