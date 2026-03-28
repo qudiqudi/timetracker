@@ -153,6 +153,8 @@ const I18n = (() => {
 
             // Changelog
             whatsNew: "What's new",
+            whatsNewCloudSyncTitle: "Cloud Sync",
+            whatsNewCloudSyncDesc: "Your sessions now sync automatically across devices. Go to Sync, generate a phrase, enter it on your other device, and you're connected. Encrypted and zero-cost.",
             whatsNewEditEntryTitle: "Edit Time Entries",
             whatsNewEditEntryDesc: "You can now edit the start and end times of your tracking sessions directly from the history tab. Mistakes happen, and Hubi understands!",
         },
@@ -306,6 +308,8 @@ const I18n = (() => {
 
             // Changelog
             whatsNew: "Was gibt's Neues",
+            whatsNewCloudSyncTitle: "Cloud-Sync",
+            whatsNewCloudSyncDesc: "Deine Sitzungen werden jetzt automatisch zwischen Geräten synchronisiert. Geh zu Sync, generiere eine Phrase, gib sie auf deinem anderen Gerät ein, und fertig. Verschlüsselt und kostenlos.",
             whatsNewEditEntryTitle: "Zeiteinträge bearbeiten",
             whatsNewEditEntryDesc: "Du kannst jetzt die Start- und Endzeiten deiner erfassten Sitzungen direkt im Verlauf bearbeiten. Fehler passieren, und Hubi versteht das!",
         }

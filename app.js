@@ -1278,8 +1278,9 @@ function showDialog(emoji, title, text, confirmLabel, cancelLabel, onConfirm) {
 }
 
 // ---- Changelog ----
-const CHANGELOG_VERSION = 1;
+const CHANGELOG_VERSION = 2;
 const CHANGELOG_ENTRIES = [
+    { emoji: '☁️', titleKey: 'whatsNewCloudSyncTitle', descKey: 'whatsNewCloudSyncDesc' },
     { emoji: '✏️', titleKey: 'whatsNewEditEntryTitle', descKey: 'whatsNewEditEntryDesc' },
 ];
 
