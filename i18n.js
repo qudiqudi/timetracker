@@ -59,7 +59,9 @@ const I18n = (() => {
             to: 'To',
             save: 'Save',
             sessionUpdated: '✏️ Session updated',
+            sessionUpdatedBreaksReset: '✏️ Session updated (breaks were reset)',
             sessionUpdateFailed: 'Could not update session',
+            sessionTooLong: 'Session cannot exceed 16 hours',
             breaksReset: 'Breaks were reset (shorter session)',
 
             // Stats
@@ -185,7 +187,9 @@ const I18n = (() => {
             to: 'Bis',
             save: 'Speichern',
             sessionUpdated: '✏️ Sitzung aktualisiert',
+            sessionUpdatedBreaksReset: '✏️ Sitzung aktualisiert (Pausen zurückgesetzt)',
             sessionUpdateFailed: 'Sitzung konnte nicht aktualisiert werden',
+            sessionTooLong: 'Sitzung darf nicht länger als 16 Stunden sein',
             breaksReset: 'Pausen wurden zurückgesetzt (kürzere Sitzung)',
 
             // Stats

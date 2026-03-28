@@ -179,9 +179,22 @@ function navigateTo(page) {
     renderPage();
 }
 
+let currentWatchPicker = null;
+let currentWatchPickerCleanup = null;
+let editingSessionId = null;
+
+function cleanupWatchPicker() {
+    if (currentWatchPickerCleanup) currentWatchPickerCleanup();
+    if (currentWatchPicker) currentWatchPicker.remove();
+    currentWatchPicker = null;
+    currentWatchPickerCleanup = null;
+}
+
 function renderPage() {
     clearInterval(timerInterval);
     timerInterval = null;
+    cleanupWatchPicker();
+    editingSessionId = null;
 
     switch (currentPage) {
         case 'timer':
@@ -473,7 +486,6 @@ function getCurrentMonthRange() {
 const defaultRange = getCurrentMonthRange();
 let historyFilterFrom = defaultRange.from;
 let historyFilterTo = defaultRange.to;
-let editingSessionId = null;
 
 function renderHistoryPage() {
     let sessions = Storage.getSessions();
@@ -520,10 +532,10 @@ function renderHistoryPage() {
     const fromInput = document.getElementById('filter-from');
     const toInput = document.getElementById('filter-to');
     document.getElementById('filter-from-btn').addEventListener('click', () => {
-        fromInput.showPicker();
+        if (fromInput.showPicker) fromInput.showPicker(); else fromInput.click();
     });
     document.getElementById('filter-to-btn').addEventListener('click', () => {
-        toInput.showPicker();
+        if (toInput.showPicker) toInput.showPicker(); else toInput.click();
     });
     fromInput.addEventListener('change', (e) => {
         historyFilterFrom = e.target.value;
@@ -635,8 +647,10 @@ function renderSessionCard(session) {
     `;
 }
 
-let currentWatchPicker = null;
-let currentWatchPickerCleanup = null;
+function detectIs24h() {
+    const formatted = new Intl.DateTimeFormat(I18n.getLocale(), { hour: 'numeric' }).format(new Date(2000, 0, 1, 13));
+    return formatted.includes('13');
+}
 
 function formatTimeDisplay(timeString, is24h) {
     if (is24h) return timeString;
@@ -785,14 +799,16 @@ function showWatchPicker(initialTime, is24h, onSave) {
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 const dist = Math.sqrt((clientX - cx) ** 2 + (clientY - cy) ** 2);
-                const isInner = dist < rect.width * 0.32;
+                const scale = rect.width / 2 / DIAL_RADIUS;
+                const midpoint = (DIAL_RADIUS + (DIAL_RADIUS - INNER_RING_OFFSET)) / 2;
+                const isInner = dist < midpoint * scale;
                 if (isInner) {
                     val = val === 0 ? 0 : val + 12;
                     if (val > 23) val = 0;
                 }
                 h = val;
                 hDisp.textContent = String(h).padStart(2, '0');
-                setHand((h % 12) * 30, (h === 0 || h > 12) ? 35 : 0);
+                setHand((h % 12) * 30, (h === 0 || h > 12) ? INNER_RING_OFFSET : 0);
             } else {
                 h = val === 0 ? 12 : val;
                 hDisp.textContent = String(h);
@@ -810,7 +826,7 @@ function showWatchPicker(initialTime, is24h, onSave) {
             mode = 'minute';
             hDisp.className = 'wp-segment wp-segment-dim';
             mDisp.className = 'wp-segment wp-segment-active';
-            setTimeout(() => renderDial(), 50);
+            setTimeout(() => renderDialNumbers(), 50);
         }
     }
 
@@ -832,20 +848,23 @@ function showWatchPicker(initialTime, is24h, onSave) {
     }
     currentWatchPickerCleanup = cleanupDragListeners;
 
+    const DIAL_RADIUS = 95;
+    const INNER_RING_OFFSET = 35;
+    const INNER_RING_THRESHOLD = DIAL_RADIUS - INNER_RING_OFFSET;
+
     function renderDialNumbers() {
         numbersContainer.innerHTML = '';
-        const radius = 95;
         const items = mode === 'hour' ? (is24h ? 24 : 12) : 12;
 
         for (let i = 0; i < items; i++) {
             let label, val;
-            let currentRadius = radius;
+            let currentRadius = DIAL_RADIUS;
 
             if (mode === 'hour') {
                 if (is24h) {
                     val = i;
                     label = i === 0 ? '00' : String(i);
-                    if (val === 0 || val > 12) currentRadius = radius - 35;
+                    if (val === 0 || val > 12) currentRadius = DIAL_RADIUS - INNER_RING_OFFSET;
                 } else {
                     val = i === 0 ? 12 : i;
                     label = String(val);
@@ -871,7 +890,7 @@ function showWatchPicker(initialTime, is24h, onSave) {
                 (isActive ? ' wp-number-active' : '');
 
             if (isActive) {
-                setHand(angleDeg, radius - currentRadius);
+                setHand(angleDeg, DIAL_RADIUS - currentRadius);
             }
 
             numEl.textContent = label;
@@ -891,11 +910,11 @@ function showWatchPicker(initialTime, is24h, onSave) {
                     mode = 'minute';
                     hDisp.className = 'wp-segment wp-segment-dim';
                     mDisp.className = 'wp-segment wp-segment-active';
-                    setTimeout(() => renderDial(), 50);
+                    setTimeout(() => renderDialNumbers(), 50);
                 } else {
                     m = val;
                     mDisp.textContent = String(m).padStart(2, '0');
-                    renderDial();
+                    renderDialNumbers();
                 }
             });
 
@@ -908,21 +927,17 @@ function showWatchPicker(initialTime, is24h, onSave) {
         }
     }
 
-    function renderDial() {
-        renderDialNumbers();
-    }
-
     hDisp.addEventListener('click', () => {
         mode = 'hour';
         mDisp.className = 'wp-segment wp-segment-dim';
         hDisp.className = 'wp-segment wp-segment-active';
-        renderDial();
+        renderDialNumbers();
     });
     mDisp.addEventListener('click', () => {
         mode = 'minute';
         hDisp.className = 'wp-segment wp-segment-dim';
         mDisp.className = 'wp-segment wp-segment-active';
-        renderDial();
+        renderDialNumbers();
     });
 
     overlay.querySelector('#wp-cancel').addEventListener('click', () => {
@@ -944,13 +959,13 @@ function showWatchPicker(initialTime, is24h, onSave) {
         onSave(timeVal);
     });
 
-    renderDial();
+    renderDialNumbers();
 }
 
 function renderEditSessionCard(session) {
     const fromTime = new Date(session.startTime).toTimeString().slice(0, 5);
     const toTime = new Date(session.endTime).toTimeString().slice(0, 5);
-    const is24h = I18n.lang === 'de';
+    const is24h = detectIs24h();
 
     return `
         <div class="card edit-card" id="session-edit-${session.id}">
@@ -1008,20 +1023,27 @@ function saveSessionEdit(id, fromValue, toValue) {
         newEndTs += 24 * 60 * 60 * 1000;
     }
 
+    const totalElapsed = newEndTs - newStartTs;
+    const MAX_SESSION_MS = 16 * 60 * 60 * 1000;
+    if (totalElapsed > MAX_SESSION_MS) {
+        showToast(t('sessionTooLong'));
+        return;
+    }
+
     session.startTime = newStartTs;
     session.endTime = newEndTs;
 
-    const totalElapsed = newEndTs - newStartTs;
+    let breaksWereReset = false;
     if (session.totalBreak > totalElapsed) {
         session.totalBreak = 0;
         session.breaks = [];
-        showToast(t('breaksReset'));
+        breaksWereReset = true;
     }
     session.totalWork = totalElapsed - session.totalBreak;
 
     sessions[sessionIndex] = session;
     Storage.saveSessions(sessions);
-    showToast(t('sessionUpdated'));
+    showToast(breaksWereReset ? t('sessionUpdatedBreaksReset') : t('sessionUpdated'));
 
     editingSessionId = null;
     renderHistoryPage();
