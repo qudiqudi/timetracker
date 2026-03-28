@@ -446,7 +446,7 @@ body::before {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
-    padding-right: 30px; /* Space for the absolute delete button */
+    padding-right: 64px; /* Space for the absolute delete and edit buttons */
 }
 
 .card-title {
@@ -498,30 +498,39 @@ body::before {
     color: var(--blue-break);
 }
 
-.card-delete {
+.card-delete, .card-edit {
     position: absolute;
     top: 12px;
-    right: 12px;
     width: 32px;
     height: 32px;
     border-radius: 50%;
     border: none;
     background: var(--cream);
-    color: var(--red-danger);
-    font-size: 1rem;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.5;
+    cursor: pointer;
     transition: all 0.3s;
+    opacity: 0.5;
+}
+
+.card-delete {
+    right: 12px;
+    color: var(--red-danger);
+    font-size: 1rem;
+}
+
+.card-edit {
+    right: 48px;
+    color: var(--orange-primary);
+    font-size: 0.9rem;
 }
 
 @media (hover: hover) {
-    .card-delete {
+    .card-delete, .card-edit {
         opacity: 0;
     }
-    .card:hover .card-delete {
+    .card:hover .card-delete, .card:hover .card-edit {
         opacity: 1;
     }
 }
@@ -531,6 +540,48 @@ body::before {
     background: var(--red-light);
 }
 
+.card-edit:active {
+    transform: scale(0.85);
+    background: var(--orange-light);
+}
+
+/* Edit Form */
+.time-picker-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.time-picker-group label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 4px;
+}
+
+.native-time-picker {
+    display: block;
+    border: 2px solid var(--cream-dark);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    transition: border-color 0.3s;
+    padding: 0 10px;
+    height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--font-family);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--chocolate);
+    outline: none;
+    cursor: pointer;
+}
+
+.native-time-picker:focus,
+.native-time-picker:focus-within {
+    border-color: var(--orange-primary);
+}
 /* --- Empty State --- */
 .empty-state {
     text-align: center;

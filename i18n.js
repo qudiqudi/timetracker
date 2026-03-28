@@ -53,6 +53,12 @@ const I18n = (() => {
             delete: 'Delete',
             keepIt: 'Keep it',
             sessionDeleted: '🗑️ Session deleted',
+            edit: 'Edit',
+            editSession: 'Edit Session',
+            from: 'From',
+            to: 'To',
+            save: 'Save',
+            sessionUpdated: '✏️ Session updated',
 
             // Stats
             statistics: 'Statistics',
@@ -171,6 +177,12 @@ const I18n = (() => {
             delete: 'Löschen',
             keepIt: 'Behalten',
             sessionDeleted: '🗑️ Sitzung gelöscht',
+            edit: 'Bearbeiten',
+            editSession: 'Sitzung bearbeiten',
+            from: 'Von',
+            to: 'Bis',
+            save: 'Speichern',
+            sessionUpdated: '✏️ Sitzung aktualisiert',
 
             // Stats
             statistics: 'Statistik',
