@@ -1,0 +1,7 @@
+name = "hubi-sync"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "SYNC_KV"
+id = "f93a194b2e8541b381e12a0be31ecd52"

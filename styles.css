@@ -1763,6 +1763,48 @@ body::before {
     cursor: pointer;
 }
 
+/* --- Cloud Sync --- */
+.cloud-sync-card {
+    background: var(--cream);
+    border: 2px solid var(--orange-light);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.cloud-sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.cloud-sync-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--gray);
+    flex-shrink: 0;
+}
+
+.cloud-sync-dot.connected {
+    background: #4CAF50;
+}
+
+.cloud-sync-last {
+    font-size: 0.8rem;
+    color: var(--brown-warm);
+    opacity: 0.7;
+    margin-bottom: 12px;
+}
+
+.cloud-sync-divider {
+    margin: 24px 0 16px;
+    border: none;
+    border-top: 1px solid var(--orange-light);
+}
+
 /* --- Hubi Zone (mobile pet area) --- */
 #hubi-zone {
     display: none;

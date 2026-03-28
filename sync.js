@@ -44,6 +44,11 @@ const LEGACY_SALT = new TextEncoder().encode('hubi-cat-sync');
 const LEGACY_PREFIX = 'HUBI1:';
 const DATA_PREFIX = 'HUBI2:';
 
+// ---- Cloud Sync Config ----
+const SYNC_API = 'https://sync.qudiqudi.de';
+const SYNC_PHRASE_KEY = 'hubi_sync_phrase';
+const SYNC_LAST_KEY = 'hubi_sync_last';
+
 // ---- Crypto Helpers ----
 
 async function deriveKey(phrase, salt) {
@@ -61,6 +66,12 @@ async function deriveKey(phrase, salt) {
         false,
         ['encrypt', 'decrypt']
     );
+}
+
+async function phraseToChannel(phrase) {
+    const data = new TextEncoder().encode('channel:' + phrase);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function bytesToBase64(bytes) {
@@ -134,6 +145,25 @@ function validatePhrase(phrase) {
     return words.every(w => WORDS.includes(w));
 }
 
+// ---- Session Sanitization ----
+
+function sanitizeSessions(incoming) {
+    if (!Array.isArray(incoming)) throw new Error('not an array');
+    return incoming.filter(s =>
+        s && typeof s.id === 'string' &&
+        typeof s.startTime === 'number' &&
+        typeof s.endTime === 'number'
+    ).map(s => ({
+        id: String(s.id).replace(/[^a-z0-9]/gi, '').slice(0, 30),
+        date: typeof s.date === 'string' ? s.date.replace(/[^0-9-]/g, '').slice(0, 10) : new Date(s.startTime).toISOString().split('T')[0],
+        startTime: Number(s.startTime),
+        endTime: Number(s.endTime),
+        breaks: Array.isArray(s.breaks) ? s.breaks.filter(b => typeof b.start === 'number' && typeof b.end === 'number').map(b => ({ start: Number(b.start), end: Number(b.end) })) : [],
+        totalWork: typeof s.totalWork === 'number' ? Number(s.totalWork) : 0,
+        totalBreak: typeof s.totalBreak === 'number' ? Number(s.totalBreak) : 0,
+    }));
+}
+
 // ---- CSV Export ----
 
 function padTwo(n) { return String(n).padStart(2, '0'); }
@@ -201,6 +231,102 @@ function mergeSessions(existing, incoming) {
     return { merged, newCount };
 }
 
+// ---- Cloud Sync ----
+
+const CloudSync = {
+    _intervalId: null,
+    _pushDebounce: null,
+    INTERVAL_MS: 5 * 60 * 1000,
+
+    getPhrase() {
+        return localStorage.getItem(SYNC_PHRASE_KEY) || null;
+    },
+
+    setPhrase(phrase) {
+        localStorage.setItem(SYNC_PHRASE_KEY, phrase);
+    },
+
+    clearPhrase() {
+        localStorage.removeItem(SYNC_PHRASE_KEY);
+        localStorage.removeItem(SYNC_LAST_KEY);
+        this.stopAutoSync();
+    },
+
+    isPaired() {
+        return !!this.getPhrase();
+    },
+
+    getLastSync() {
+        return localStorage.getItem(SYNC_LAST_KEY) || null;
+    },
+
+    async push(phrase) {
+        const sessions = Storage.getSessions();
+        if (!sessions.length) return;
+        const channelId = await phraseToChannel(phrase);
+        const encrypted = await encryptData(JSON.stringify(sessions), phrase);
+        const res = await fetch(`${SYNC_API}/sync/${channelId}`, {
+            method: 'PUT',
+            body: encrypted,
+        });
+        if (!res.ok) throw new Error(`Push failed: ${res.status}`);
+    },
+
+    async pull(phrase) {
+        const channelId = await phraseToChannel(phrase);
+        const res = await fetch(`${SYNC_API}/sync/${channelId}`);
+        if (res.status === 404) return 0;
+        if (!res.ok) throw new Error(`Pull failed: ${res.status}`);
+        const blob = await res.text();
+        if (!blob) return 0;
+        const decrypted = await decryptData(blob, phrase);
+        const incoming = sanitizeSessions(JSON.parse(decrypted));
+        const existing = Storage.getSessions();
+        const { merged, newCount } = mergeSessions(existing, incoming);
+        if (newCount > 0) Storage.saveSessions(merged);
+        return newCount;
+    },
+
+    async sync() {
+        const phrase = this.getPhrase();
+        if (!phrase) return;
+        try {
+            await this.pull(phrase);
+            await this.push(phrase);
+            localStorage.setItem(SYNC_LAST_KEY, new Date().toISOString());
+        } catch (e) {
+            console.warn('Cloud sync failed:', e.message);
+        }
+    },
+
+    startAutoSync() {
+        if (!this.isPaired()) return;
+        this.stopAutoSync();
+        this.sync();
+        this._intervalId = setInterval(() => this.sync(), this.INTERVAL_MS);
+    },
+
+    stopAutoSync() {
+        if (this._intervalId) {
+            clearInterval(this._intervalId);
+            this._intervalId = null;
+        }
+    },
+
+    schedulePush() {
+        if (!this.isPaired()) return;
+        clearTimeout(this._pushDebounce);
+        this._pushDebounce = setTimeout(() => this.sync(), 2000);
+    }
+};
+
+// Monkey-patch Storage.saveSessions to trigger cloud sync on save
+const _origSave = Storage.saveSessions.bind(Storage);
+Storage.saveSessions = function(sessions) {
+    _origSave(sessions);
+    CloudSync.schedulePush();
+};
+
 // ---- QR Scanner ----
 
 function openScanner(onResult) {
@@ -264,7 +390,112 @@ function openScanner(onResult) {
         });
 }
 
+// ---- Relative Time Helper ----
+
+function relativeTime(isoStr) {
+    if (!isoStr) return t('lastSyncedNever');
+    const diff = Date.now() - new Date(isoStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t('cloudSyncDone');
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
+
 // ---- Page Rendering ----
+
+function renderCloudSyncSection() {
+    const paired = CloudSync.isPaired();
+
+    if (!paired) {
+        return `
+            <div class="cloud-sync-card">
+                <div class="sync-label">${t('cloudSync')}</div>
+                <p class="sync-hint" style="margin-bottom:12px">${t('cloudSyncDesc')}</p>
+                <div class="sync-btn-row" style="margin-bottom:16px">
+                    <button class="btn btn-start" id="cloud-generate">${t('generatePhrase')}</button>
+                </div>
+                <div class="sync-label" style="font-size:0.8rem">${t('enterExistingPhrase')}</div>
+                <input class="sync-input" type="text" id="cloud-phrase-input"
+                    placeholder="${t('phrasePlaceholder')}"
+                    autocomplete="off" autocapitalize="none" spellcheck="false">
+                <div class="sync-btn-row" style="margin-top:8px">
+                    <button class="btn btn-secondary" id="cloud-connect">${t('connectWithPhrase')}</button>
+                </div>
+            </div>
+        `;
+    }
+
+    const phrase = CloudSync.getPhrase();
+    const phraseWords = phrase.split(' ').map(w => `<span class="sync-phrase-word">${w}</span>`).join('');
+    const lastSync = relativeTime(CloudSync.getLastSync());
+
+    return `
+        <div class="cloud-sync-card">
+            <div class="sync-label">${t('cloudSync')}</div>
+            <div class="cloud-sync-status">
+                <span class="cloud-sync-dot connected"></span>
+                <span>${t('cloudConnected')}</span>
+            </div>
+            <div class="sync-phrase">
+                <div class="sync-phrase-words">${phraseWords}</div>
+            </div>
+            <div class="cloud-sync-last">${t('lastSynced')}: ${lastSync}</div>
+            <div class="sync-btn-row">
+                <button class="btn btn-start" id="cloud-sync-now">${t('syncNow')}</button>
+                <button class="btn btn-secondary" id="cloud-disconnect">${t('disconnect')}</button>
+            </div>
+        </div>
+    `;
+}
+
+function attachCloudSyncListeners(appEl) {
+    const paired = CloudSync.isPaired();
+
+    if (!paired) {
+        document.getElementById('cloud-generate')?.addEventListener('click', async () => {
+            const phrase = generatePhrase();
+            CloudSync.setPhrase(phrase);
+            CloudSync.startAutoSync();
+            showToast(t('cloudSyncStarted'));
+            renderSyncPage(appEl);
+        });
+
+        document.getElementById('cloud-connect')?.addEventListener('click', async () => {
+            const input = document.getElementById('cloud-phrase-input').value.trim().toLowerCase();
+            const phrase = input.split(/\s+/).join(' ');
+            if (!validatePhrase(phrase)) {
+                showToast(t('invalidPhrase'));
+                return;
+            }
+            CloudSync.setPhrase(phrase);
+            CloudSync.startAutoSync();
+            showToast(t('cloudSyncStarted'));
+            renderSyncPage(appEl);
+        });
+    } else {
+        document.getElementById('cloud-sync-now')?.addEventListener('click', async () => {
+            const btn = document.getElementById('cloud-sync-now');
+            btn.disabled = true;
+            btn.textContent = t('cloudSyncing');
+            try {
+                await CloudSync.sync();
+                showToast(t('cloudSyncDone'));
+            } catch {
+                showToast(t('cloudSyncFailed'));
+            }
+            renderSyncPage(appEl);
+        });
+
+        document.getElementById('cloud-disconnect')?.addEventListener('click', () => {
+            CloudSync.clearPhrase();
+            showToast(t('cloudSyncDisconnected'));
+            renderSyncPage(appEl);
+        });
+    }
+}
 
 function renderSyncPage(appEl) {
     appEl.innerHTML = `
@@ -274,6 +505,12 @@ function renderSyncPage(appEl) {
                 <h1 class="page-title">${t('syncTitle')}</h1>
                 <p class="page-subtitle">${t('syncSubtitle')}</p>
             </div>
+
+            ${renderCloudSyncSection()}
+
+            <hr class="cloud-sync-divider">
+            <div class="sync-label" style="margin-bottom:12px">${t('manualTransfer')}</div>
+
             <div class="sync-actions">
                 <button class="sync-card" id="sync-export">
                     <span class="sync-card-icon">📤</span>
@@ -293,6 +530,7 @@ function renderSyncPage(appEl) {
         </div>
     `;
 
+    attachCloudSyncListeners(appEl);
     document.getElementById('sync-export').addEventListener('click', () => renderExportPage(appEl));
     document.getElementById('sync-import').addEventListener('click', () => renderImportPage(appEl));
     document.getElementById('sync-csv').addEventListener('click', exportCSV);
@@ -477,22 +715,7 @@ function renderImportPage(appEl) {
 
         let incoming;
         try {
-            incoming = JSON.parse(decrypted);
-            if (!Array.isArray(incoming)) throw new Error('not an array');
-            // Sanitize: keep only expected fields with expected types
-            incoming = incoming.filter(s =>
-                s && typeof s.id === 'string' &&
-                typeof s.startTime === 'number' &&
-                typeof s.endTime === 'number'
-            ).map(s => ({
-                id: String(s.id).replace(/[^a-z0-9]/gi, '').slice(0, 30),
-                date: typeof s.date === 'string' ? s.date.replace(/[^0-9-]/g, '').slice(0, 10) : new Date(s.startTime).toISOString().split('T')[0],
-                startTime: Number(s.startTime),
-                endTime: Number(s.endTime),
-                breaks: Array.isArray(s.breaks) ? s.breaks.filter(b => typeof b.start === 'number' && typeof b.end === 'number').map(b => ({ start: Number(b.start), end: Number(b.end) })) : [],
-                totalWork: typeof s.totalWork === 'number' ? Number(s.totalWork) : 0,
-                totalBreak: typeof s.totalBreak === 'number' ? Number(s.totalBreak) : 0,
-            }));
+            incoming = sanitizeSessions(JSON.parse(decrypted));
         } catch {
             showToast(t('decryptFailed'));
             return;
@@ -513,6 +736,9 @@ function renderImportPage(appEl) {
     document.getElementById('import-back').addEventListener('click', () => renderSyncPage(appEl));
 }
 
-return { renderSyncPage };
+// Start auto-sync if previously paired
+CloudSync.startAutoSync();
+
+return { renderSyncPage, CloudSync };
 
 })();

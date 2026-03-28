@@ -131,6 +131,26 @@ const I18n = (() => {
             qrScanned: 'QR scanned!',
             closeCamera: 'Close camera',
 
+            // Cloud Sync
+            cloudSync: 'Cloud Sync',
+            cloudSyncDesc: 'Keep devices in sync automatically',
+            cloudConnected: 'Connected',
+            cloudDisconnected: 'Not connected',
+            generatePhrase: 'Generate new phrase',
+            connectWithPhrase: 'Connect',
+            enterExistingPhrase: 'Have a phrase from another device?',
+            syncNow: 'Sync now',
+            disconnect: 'Disconnect',
+            lastSynced: 'Last synced',
+            lastSyncedNever: 'Never',
+            cloudSyncStarted: 'Cloud sync connected!',
+            cloudSyncDisconnected: 'Cloud sync disconnected',
+            cloudSyncing: 'Syncing...',
+            cloudSyncDone: 'Synced!',
+            manualTransfer: 'Manual Transfer',
+            disconnectConfirm: 'Disconnect cloud sync?',
+            disconnectDesc: 'Your data stays on this device. You can reconnect anytime with the same phrase.',
+
             // Changelog
             whatsNew: "What's new",
             whatsNewEditEntryTitle: "Edit Time Entries",
@@ -263,6 +283,26 @@ const I18n = (() => {
             manualDataHint: 'Nur nötig, wenn QR-Scan nicht verfügbar ist',
             qrScanned: 'QR gescannt!',
             closeCamera: 'Kamera schließen',
+
+            // Cloud Sync
+            cloudSync: 'Cloud-Sync',
+            cloudSyncDesc: 'Geräte automatisch synchron halten',
+            cloudConnected: 'Verbunden',
+            cloudDisconnected: 'Nicht verbunden',
+            generatePhrase: 'Neue Phrase generieren',
+            connectWithPhrase: 'Verbinden',
+            enterExistingPhrase: 'Phrase von einem anderen Gerät?',
+            syncNow: 'Jetzt synchronisieren',
+            disconnect: 'Trennen',
+            lastSynced: 'Zuletzt synchronisiert',
+            lastSyncedNever: 'Nie',
+            cloudSyncStarted: 'Cloud-Sync verbunden!',
+            cloudSyncDisconnected: 'Cloud-Sync getrennt',
+            cloudSyncing: 'Synchronisiere...',
+            cloudSyncDone: 'Synchronisiert!',
+            manualTransfer: 'Manueller Transfer',
+            disconnectConfirm: 'Cloud-Sync trennen?',
+            disconnectDesc: 'Deine Daten bleiben auf diesem Gerät. Du kannst dich jederzeit mit derselben Phrase wieder verbinden.',
 
             // Changelog
             whatsNew: "Was gibt's Neues",
