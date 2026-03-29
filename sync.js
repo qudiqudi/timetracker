@@ -490,6 +490,8 @@ function attachPhraseAutocomplete(inputId) {
         input.value = words.join(' ') + (count < 12 ? ' ' : '');
         dropdown.classList.remove('visible');
         input.focus();
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
     }
 
     function highlightItem(idx) {
