@@ -33,7 +33,7 @@ The app is hosted at `https://hubi.work`. Domain is registered via Cloudflare Re
 - `worker/` -- Cloudflare Worker for cloud sync relay. `wrangler.toml` + `src/index.js`. Deployed to `sync.hubi.work`. KV namespace `SYNC_KV` stores encrypted blobs keyed by 64-char hex channel IDs. CORS restricted to `hubi.work` + localhost. Rate-limited at the edge via Cloudflare WAF rule (5 PUT/10s per IP). Validates PUT body starts with `HUBI2:` and enforces 512KB size limit.
 - `qrcodegen.js` -- Project Nayuki's QR Code generator library v1.8.0 (MIT). Used by `qr.js`.
 - `qr.js` -- thin SVG wrapper around `qrcodegen.js`. Exposes `QR.toSVG(text, size)`.
-- `sw.js` -- service worker for offline caching. Bump `CACHE_NAME` version when changing cached assets.
+- `sw.js` -- service worker for offline caching. `CACHE_NAME` is auto-stamped with the commit SHA at deploy time (see `deploy.yml`), so no manual version bumps needed.
 - `manifest.json` -- PWA manifest
 
 ## Data layer
