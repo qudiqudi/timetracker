@@ -1737,6 +1737,8 @@ body::before {
     position: absolute;
     width: 44px;
     height: 56px;
+    bottom: -16px;
+    left: -38px;
     transform: perspective(120px) rotateY(30deg);
 }
 .easel-canvas {
