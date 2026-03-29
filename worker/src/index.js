@@ -50,29 +50,13 @@ async function fetchCfAnalytics(env, fromDate, toDate) {
 	const query = `{
 		viewer {
 			zones(filter: { zoneTag: "${env.CF_ZONE_ID}" }) {
-				daily: httpRequestsAdaptiveGroups(
-					filter: {
-						date_geq: "${fromDate}"
-						date_leq: "${toDate}"
-						clientRequestHTTPHost: "sync.hubi.work"
-					}
+				httpRequests1dGroups(
+					filter: { date_geq: "${fromDate}" date_leq: "${toDate}" }
 					limit: 366
 					orderBy: [date_ASC]
 				) {
 					dimensions { date }
-					sum { requests edgeResponseBytes threats }
-				}
-				byStatus: httpRequestsAdaptiveGroups(
-					filter: {
-						date_geq: "${fromDate}"
-						date_leq: "${toDate}"
-						clientRequestHTTPHost: "sync.hubi.work"
-					}
-					limit: 10000
-					orderBy: [date_ASC]
-				) {
-					dimensions { date edgeResponseStatus }
-					sum { requests }
+					sum { requests bytes threats responseStatusMap { edgeResponseStatus requests } }
 				}
 			}
 		}
@@ -88,31 +72,25 @@ async function fetchCfAnalytics(env, fromDate, toDate) {
 	});
 
 	const json = await resp.json();
-	if (!json.data?.viewer?.zones?.[0]) return null;
+	const rows = json.data?.viewer?.zones?.[0]?.httpRequests1dGroups;
+	if (!rows) return null;
 
-	const zone = json.data.viewer.zones[0];
-
-	// Index daily totals by date
 	const daily = {};
-	for (const row of zone.daily) {
+	for (const row of rows) {
+		let status_2xx = 0, status_4xx = 0, status_5xx = 0;
+		for (const s of row.sum.responseStatusMap) {
+			if (s.edgeResponseStatus >= 200 && s.edgeResponseStatus < 300) status_2xx += s.requests;
+			else if (s.edgeResponseStatus >= 400 && s.edgeResponseStatus < 500) status_4xx += s.requests;
+			else if (s.edgeResponseStatus >= 500) status_5xx += s.requests;
+		}
 		daily[row.dimensions.date] = {
 			requests: row.sum.requests,
-			bytes: row.sum.edgeResponseBytes,
+			bytes: row.sum.bytes,
 			threats: row.sum.threats,
-			status_2xx: 0,
-			status_4xx: 0,
-			status_5xx: 0,
+			status_2xx,
+			status_4xx,
+			status_5xx,
 		};
-	}
-
-	// Aggregate status codes into daily buckets
-	for (const row of zone.byStatus) {
-		const d = daily[row.dimensions.date];
-		if (!d) continue;
-		const s = row.dimensions.edgeResponseStatus;
-		if (s >= 200 && s < 300) d.status_2xx += row.sum.requests;
-		else if (s >= 400 && s < 500) d.status_4xx += row.sum.requests;
-		else if (s >= 500) d.status_5xx += row.sum.requests;
 	}
 
 	return daily;
