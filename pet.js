@@ -17,7 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
         BUTTERFLY: 'butterfly',
         BOX: 'box',
         PRODUCTIVE: 'productive',
-        TREAT: 'treat'
+        TREAT: 'treat',
+        // Task-preview states (mascot slot only)
+        TASK_LERNEN: 'task-lernen',
+        TASK_PUTZEN: 'task-putzen',
+        TASK_ENTSPANNEN: 'task-entspannen',
+        TASK_KOCHEN: 'task-kochen',
+        TASK_SPORT: 'task-sport',
+        TASK_KREATIV: 'task-kreativ',
+        TASK_EINKAUFEN: 'task-einkaufen',
     };
 
     class HubiPet {
@@ -44,6 +52,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="pet-prop prop-box" aria-hidden="true">📦</span>
                 <span class="pet-prop prop-laptop" aria-hidden="true">💻</span>
                 <span class="pet-prop prop-glasses" aria-hidden="true">👓</span>
+                <span class="pet-prop prop-dream" aria-hidden="true">
+                    <span class="dream-bubble"></span>
+                    <span class="dream-dot dream-dot-1"></span>
+                    <span class="dream-dot dream-dot-2"></span>
+                    <span class="dream-fish">🐟</span>
+                </span>
+                <span class="pet-prop prop-book" aria-hidden="true">
+                    <span class="book-cover"></span>
+                    <span class="book-page"></span>
+                    <span class="book-page book-page-flip"></span>
+                </span>
+                <span class="pet-prop prop-pot" aria-hidden="true">
+                    <span class="pot-body"></span>
+                    <span class="pot-steam">~</span>
+                    <span class="pot-steam pot-steam-2">~</span>
+                    <span class="pot-steam pot-steam-3">~</span>
+                </span>
+                <span class="pet-prop prop-cart" aria-hidden="true">
+                    <span class="cart-body">🛒</span>
+                    <span class="cart-treat">🐟</span>
+                    <span class="cart-treat cart-treat-2">🐟</span>
+                    <span class="cart-treat cart-treat-3">🐟</span>
+                </span>
                 ${window.getHubiCatHTML('', 'hubi-pet-sprite')}
             `;
 
@@ -55,6 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const head = this.sprite.querySelector('.cat-head');
             if (glasses && head) head.appendChild(glasses);
 
+            this.initBodyProps(head);
+
             // Meow sounds
             this.meowSounds = [];
             this.loadMeows();
@@ -64,6 +97,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 this.onPetted();
             });
+        }
+
+        // Props that attach to cat body parts (follow animations naturally).
+        // Kept as a separate method so future props are easy to add.
+        initBodyProps(head) {
+            const body = this.sprite.querySelector('.cat-body');
+            const face = this.sprite.querySelector('.cat-face');
+
+            // Chef hat (kochen) — tall toque on the head
+            const chefHat = document.createElement('div');
+            chefHat.className = 'body-prop prop-chef-hat';
+            chefHat.setAttribute('aria-hidden', 'true');
+            if (head) head.appendChild(chefHat);
+
+            // Headband (sport) — colored band across the head
+            const headband = document.createElement('div');
+            headband.className = 'body-prop prop-headband';
+            headband.setAttribute('aria-hidden', 'true');
+            if (head) head.appendChild(headband);
+
+            // Sweat drops (sport) — animated drops
+            const sweat = document.createElement('span');
+            sweat.className = 'body-prop prop-sweat';
+            sweat.setAttribute('aria-hidden', 'true');
+            sweat.innerHTML = '<span class="sweat-drop">💧</span><span class="sweat-drop">💧</span>';
+            if (head) head.appendChild(sweat);
+
+            // Paint spots (kreativ) — colored dots on the face
+            const spots = document.createElement('div');
+            spots.className = 'body-prop prop-paint-spots';
+            spots.setAttribute('aria-hidden', 'true');
+            spots.innerHTML = '<span class="paint-dot" style="background:#EF5350"></span>'
+                + '<span class="paint-dot" style="background:#42A5F5"></span>'
+                + '<span class="paint-dot" style="background:#66BB6A"></span>';
+            if (face) face.appendChild(spots);
+
+            // Brush (kreativ) — attached to front-left leg so it follows the paw
+            const legFL = this.sprite.querySelector('.cat-leg.front.left');
+            const brush = document.createElement('span');
+            brush.className = 'body-prop prop-brush';
+            brush.setAttribute('aria-hidden', 'true');
+            brush.textContent = '🖌️';
+            if (legFL) legFL.appendChild(brush);
+
+            // Easel (kreativ) — canvas on a stand
+            const easel = document.createElement('div');
+            easel.className = 'pet-prop prop-easel';
+            easel.setAttribute('aria-hidden', 'true');
+            easel.innerHTML = '<div class="easel-leg-l"></div><div class="easel-leg-r"></div>'
+                + '<div class="easel-canvas"><span class="canvas-stroke s1"></span>'
+                + '<span class="canvas-stroke s2"></span><span class="canvas-stroke s3"></span></div>';
+            this.container.appendChild(easel);
         }
 
         loadMeows() {
@@ -90,20 +175,51 @@ document.addEventListener('DOMContentLoaded', () => {
             // Don't interrupt treat sequence
             if (this.state === STATES.TREAT) return;
 
+            const prevState = this.state;
+
             // Interrupt current action and react
-            this.setState(STATES.PETTED, 1800);
+            this.container.classList.remove(this.state);
+            this.state = STATES.PETTED;
+            this.container.classList.add(STATES.PETTED);
 
             // ~50% chance to meow
             if (Math.random() < 0.5) {
                 this.playMeow();
             }
+
+            // After the reaction, return appropriately
+            setTimeout(() => {
+                if (this.state !== STATES.PETTED) return;
+                if (this.inMascotSlot) {
+                    // Return to the task preview pose
+                    this.container.classList.remove(STATES.PETTED);
+                    this.state = prevState;
+                    this.container.classList.add(prevState);
+                } else {
+                    this.transitionToIdle();
+                }
+            }, 1800);
         }
 
         isNarrow() {
             return window.innerWidth <= 520;
         }
 
+        // Map task categories to cat animation states
+        static TASK_ANIMATIONS = {
+            arbeiten:   STATES.PRODUCTIVE,
+            lernen:     STATES.TASK_LERNEN,
+            putzen:     STATES.TASK_PUTZEN,
+            entspannen: STATES.TASK_ENTSPANNEN,
+            kochen:     STATES.TASK_KOCHEN,
+            sport:      STATES.TASK_SPORT,
+            kreativ:    STATES.TASK_KREATIV,
+            einkaufen:  STATES.TASK_EINKAUFEN,
+        };
+
         startFromMascot() {
+            this.inMascotSlot = true;
+
             // Find the slot reserved for the mascot in the header
             const slot = document.getElementById('mascot-slot');
             if (!slot) {
@@ -112,6 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.y = this.maxY() * 0.7;
                 this.updateTransform(0);
                 this.setState(STATES.IDLE);
+                this.inMascotSlot = false;
                 setTimeout(() => this.decideNextAction(), 2000);
                 return;
             }
@@ -127,12 +244,51 @@ document.addEventListener('DOMContentLoaded', () => {
             this.container.style.transition = 'none';
             this.container.style.transform = `translate(${this.x}px, ${this.y}px)`;
 
-            // Sit with active tail, then head to safe area
+            // If there's already an active session (page reload mid-work),
+            // skip waiting and jump down immediately
+            if (typeof ActiveState !== 'undefined' && ActiveState.get()) {
+                setTimeout(() => this.startCycle(), 1500);
+                return;
+            }
+
+            // Otherwise stay sitting — wait for setTaskPreview() or startCycle()
+        }
+
+        // Called by the slot reel when the selected task changes.
+        // Smoothly transitions Hubi's pose to preview the task animation
+        // while she remains in the mascot slot.
+        setTaskPreview(taskKey) {
+            if (!this.inMascotSlot) return;
+
+            const targetState = HubiPet.TASK_ANIMATIONS[taskKey] || STATES.IDLE;
+
+            // Don't re-apply the same state
+            if (this.state === targetState) return;
+
+            this.container.classList.remove(this.state);
+            this.state = targetState;
+            this.container.classList.add(this.state);
+        }
+
+        // Called when the user presses Start. Hubi jumps down from the
+        // mascot slot and begins her autonomous behaviour cycle.
+        startCycle() {
+            if (!this.inMascotSlot) return;
+            this.inMascotSlot = false;
+
+            // Re-read slot position in case layout shifted
+            const slot = document.getElementById('mascot-slot');
+            if (slot) {
+                const rect = slot.getBoundingClientRect();
+                const scrollY = this.isNarrow() ? window.scrollY : 0;
+                this.x = rect.left + rect.width / 2 - 30;
+                this.y = rect.top + scrollY;
+            }
+
             if (this.isNarrow()) {
-                // On mobile, walk down to the hubi zone instead of jumping
-                setTimeout(() => this.walkToZone(), 3000);
+                this.walkToZone();
             } else {
-                setTimeout(() => this.jumpDown(), 3000);
+                this.jumpDown();
             }
         }
 

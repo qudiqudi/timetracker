@@ -700,3 +700,433 @@
 .treat-happy .cat-tail {
     animation: tail-happy 0.4s ease-in-out infinite;
 }
+
+
+/* ============================================
+   TASK PREVIEW ANIMATIONS (mascot slot)
+   ============================================ */
+
+/* --- LERNEN (studying): reading a book, head follows text, page-turn paw --- */
+.task-lernen .cat-head {
+    animation: lernen-head 3s ease-in-out infinite;
+}
+.task-lernen .cat-eye {
+    height: 3px;
+    top: 6px;
+    animation: lernen-eyes 3s ease-in-out infinite;
+}
+.task-lernen .cat-body {
+    animation: lernen-body 3s ease-in-out infinite;
+}
+.task-lernen .cat-leg.front.left {
+    animation: lernen-paw 3s ease-in-out infinite;
+    z-index: 10;
+}
+.task-lernen .cat-tail {
+    animation: lernen-tail 4s ease-in-out infinite;
+}
+.task-lernen .cat-ear.left { animation: lernen-ear-l 6s ease-in-out infinite; }
+.task-lernen .cat-ear.right { animation: lernen-ear-r 6s ease-in-out infinite; }
+
+@keyframes lernen-head {
+    /* Reading left-right, then look up "thinking", back to book */
+    0% { transform: translateY(8px) rotate(12deg); }
+    15% { transform: translateY(8px) rotate(6deg); }
+    30% { transform: translateY(8px) rotate(12deg); }
+    45% { transform: translateY(8px) rotate(5deg); }
+    60% { transform: translateY(8px) rotate(10deg); }
+    72% { transform: translateY(2px) rotate(-5deg); }
+    82% { transform: translateY(2px) rotate(-3deg); }
+    92% { transform: translateY(6px) rotate(10deg); }
+    100% { transform: translateY(8px) rotate(12deg); }
+}
+@keyframes lernen-eyes {
+    /* Squinted while reading, wide open on "aha" moment */
+    0%, 60%, 92%, 100% { height: 3px; top: 6px; }
+    72% { height: 7px; top: 2px; width: 7px; }
+    82% { height: 7px; top: 2px; width: 7px; }
+}
+@keyframes lernen-body {
+    0%, 100% { transform: scaleY(0.95) translateY(2px); }
+    72% { transform: scaleY(1) translateY(0); }
+}
+@keyframes lernen-paw {
+    /* Page turn flick */
+    0%, 58%, 100% { transform: rotate(0); }
+    62% { transform: rotate(-50deg) translate(-10px, -12px); }
+    70% { transform: rotate(-20deg) translate(-4px, -4px); }
+}
+@keyframes lernen-tail {
+    0%, 100% { transform: rotate(-40deg); }
+    25% { transform: rotate(-30deg); }
+    50% { transform: rotate(-48deg); }
+    75% { transform: rotate(-25deg); }
+}
+@keyframes lernen-ear-l {
+    0%, 100% { transform: rotate(-15deg); }
+    72% { transform: rotate(-3deg) translateY(-4px); }
+}
+@keyframes lernen-ear-r {
+    0%, 100% { transform: rotate(15deg); }
+    72% { transform: rotate(3deg) translateY(-4px); }
+}
+
+/* --- PUTZEN (cleaning): vigorous scrubbing, whole body into it --- */
+.task-putzen .cat-head {
+    animation: putzen-head 1.4s ease-in-out infinite;
+}
+.task-putzen .cat-leg.front.left {
+    animation: putzen-paw 0.8s ease-in-out infinite;
+    z-index: 10;
+}
+.task-putzen .cat-leg.front.right {
+    animation: putzen-sweep 1.4s ease-in-out infinite;
+}
+.task-putzen .cat-body {
+    animation: putzen-body 1.4s ease-in-out infinite;
+}
+.task-putzen .cat-tail {
+    animation: putzen-tail 1.4s ease-in-out infinite;
+}
+.task-putzen .cat-eye {
+    height: 2px;
+    top: 7px;
+}
+.task-putzen .cat-ear.left { animation: putzen-ear 1.4s ease-in-out infinite; }
+.task-putzen .cat-ear.right { animation: putzen-ear 1.4s ease-in-out infinite 0.7s; }
+
+@keyframes putzen-head {
+    0%, 100% { transform: translateY(4px) rotate(10deg); }
+    30% { transform: translateY(10px) rotate(20deg); }
+    60% { transform: translateY(6px) rotate(5deg); }
+}
+@keyframes putzen-paw {
+    0% { transform: rotate(0deg); }
+    30% { transform: rotate(-70deg) translate(-12px, -14px); }
+    60% { transform: rotate(-30deg) translate(-6px, -4px); }
+    100% { transform: rotate(0deg); }
+}
+@keyframes putzen-sweep {
+    0%, 100% { transform: rotate(0deg); }
+    40% { transform: rotate(-35deg) translate(-6px, -5px); }
+}
+@keyframes putzen-body {
+    0%, 100% { transform: scaleX(1) translateX(0); }
+    30% { transform: scaleX(0.92) translateX(-4px); }
+    60% { transform: scaleX(1.04) translateX(2px); }
+}
+@keyframes putzen-tail {
+    0%, 100% { transform: rotate(-35deg); }
+    25% { transform: rotate(-60deg); }
+    50% { transform: rotate(-25deg); }
+    75% { transform: rotate(-55deg); }
+}
+@keyframes putzen-ear {
+    0%, 100% { transform: rotate(-15deg); }
+    50% { transform: rotate(-30deg) translateY(2px); }
+}
+
+/* --- ENTSPANNEN (relaxing): curled-up loaf, head on paws, gentle breathing --- */
+.task-entspannen .cat-body {
+    transform: scaleX(1.1) scaleY(0.85) translateY(4px);
+    animation: entspannen-breathe 3.5s ease-in-out infinite;
+}
+.task-entspannen .cat-head {
+    animation: entspannen-head 4s ease-in-out infinite;
+}
+.task-entspannen .cat-eye {
+    height: 1.5px;
+    top: 8px;
+    border-radius: 3px;
+    animation: entspannen-eyes 7s ease-in-out infinite;
+}
+.task-entspannen .cat-tail {
+    animation: entspannen-tail 5s ease-in-out infinite;
+    z-index: 5;
+}
+.task-entspannen .cat-leg.front {
+    transform: rotate(40deg) translateY(-6px);
+}
+.task-entspannen .cat-leg.back {
+    transform: rotate(55deg) translateY(-6px);
+}
+.task-entspannen .cat-ear.left { transform: rotate(-28deg); }
+.task-entspannen .cat-ear.right { transform: rotate(28deg); }
+
+@keyframes entspannen-breathe {
+    0%, 100% { transform: scaleX(1.1) scaleY(0.85) translateY(4px); }
+    50% { transform: scaleX(1.15) scaleY(0.9) translateY(2px); }
+}
+@keyframes entspannen-head {
+    0%, 100% { transform: translateY(12px) rotate(12deg); }
+    50% { transform: translateY(14px) rotate(14deg); }
+}
+@keyframes entspannen-eyes {
+    0%, 88%, 100% { height: 1.5px; top: 8px; }
+    92% { height: 4px; top: 5px; }
+    95% { height: 1.5px; top: 8px; }
+}
+@keyframes entspannen-tail {
+    0%, 100% { transform: rotate(-175deg) translateY(-6px); }
+    50% { transform: rotate(-160deg) translateY(-8px); }
+}
+
+/* --- KOCHEN (cooking): stirring pot, sniffing steam, wearing apron --- */
+.task-kochen .cat-head {
+    animation: kochen-head 1.5s ease-in-out infinite;
+}
+.task-kochen .cat-leg.front.left {
+    animation: kochen-stir 0.8s ease-in-out infinite;
+    z-index: 10;
+}
+.task-kochen .cat-leg.front.right {
+    animation: kochen-stir 0.8s ease-in-out infinite 0.4s;
+}
+.task-kochen .cat-body {
+    animation: kochen-body 0.8s ease-in-out infinite;
+}
+.task-kochen .cat-tail {
+    animation: kochen-tail 1s ease-in-out infinite;
+}
+.task-kochen .cat-eye {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    top: 2px;
+    animation: kochen-eyes 1.5s ease-in-out infinite;
+}
+.task-kochen .cat-ear.left { transform: rotate(-20deg); }
+.task-kochen .cat-ear.right { transform: rotate(20deg); }
+
+@keyframes kochen-head {
+    0%, 100% { transform: translateY(4px) rotate(6deg); }
+    20% { transform: translateY(10px) rotate(14deg); }
+    40% { transform: translateY(6px) rotate(4deg); }
+    60% { transform: translateY(8px) rotate(10deg); }
+    80% { transform: translateY(3px) rotate(0deg); }
+}
+@keyframes kochen-stir {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-45deg) translate(-8px, -10px); }
+}
+@keyframes kochen-body {
+    0%, 100% { transform: translateX(0) scaleX(1); }
+    25% { transform: translateX(-3px) scaleX(0.96); }
+    75% { transform: translateX(3px) scaleX(1.04); }
+}
+@keyframes kochen-tail {
+    0%, 100% { transform: rotate(-20deg); }
+    25% { transform: rotate(-55deg); }
+    50% { transform: rotate(-10deg); }
+    75% { transform: rotate(-50deg); }
+}
+@keyframes kochen-eyes {
+    /* Sniff (squint) → delicious! (wide) */
+    0%, 100% { width: 7px; height: 7px; top: 2px; }
+    20% { width: 4px; height: 2px; top: 6px; }
+    50% { width: 8px; height: 8px; top: 1px; }
+}
+@keyframes kochen-ear {
+    0%, 100% { transform: rotate(-10deg) translateY(-2px); }
+    50% { transform: rotate(-3deg) translateY(-5px); }
+}
+
+/* --- SPORT (exercise): jumping jacks, explosive energy, everything moving --- */
+.task-sport .cat-body {
+    animation: sport-body 0.5s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+.task-sport .cat-head {
+    animation: sport-head 0.5s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+.task-sport .cat-leg.front.left {
+    animation: sport-leg-fl 0.5s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+.task-sport .cat-leg.front.right {
+    animation: sport-leg-fr 0.5s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+.task-sport .cat-leg.back.left {
+    animation: sport-leg-bl 0.5s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+.task-sport .cat-leg.back.right {
+    animation: sport-leg-br 0.5s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+.task-sport .cat-tail {
+    animation: sport-tail 0.5s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+.task-sport .cat-eye {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    top: 1px;
+}
+.task-sport .cat-ear.left { animation: sport-ear-l 0.5s cubic-bezier(0.3, 0, 0.3, 1) infinite; }
+.task-sport .cat-ear.right { animation: sport-ear-r 0.5s cubic-bezier(0.3, 0, 0.3, 1) infinite; }
+
+@keyframes sport-body {
+    0%, 100% { transform: scaleY(1) translateY(0); }
+    25% { transform: scaleY(0.78) translateY(6px); }
+    55% { transform: scaleY(1.15) translateY(-8px); }
+}
+@keyframes sport-head {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(5px); }
+    55% { transform: translateY(-10px); }
+}
+@keyframes sport-leg-fl {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(25deg); }
+    55% { transform: rotate(-30deg) translateY(-8px); }
+}
+@keyframes sport-leg-fr {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(20deg); }
+    55% { transform: rotate(-25deg) translateY(-6px); }
+}
+@keyframes sport-leg-bl {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-20deg); }
+    55% { transform: rotate(15deg) translateY(-6px); }
+}
+@keyframes sport-leg-br {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-15deg); }
+    55% { transform: rotate(20deg) translateY(-5px); }
+}
+@keyframes sport-tail {
+    0%, 100% { transform: rotate(-45deg); }
+    25% { transform: rotate(-25deg); }
+    55% { transform: rotate(-70deg); }
+}
+@keyframes sport-ear-l {
+    0%, 100% { transform: rotate(-8deg) translateY(-3px); }
+    55% { transform: rotate(-20deg) translateY(-8px); }
+}
+@keyframes sport-ear-r {
+    0%, 100% { transform: rotate(8deg) translateY(-3px); }
+    55% { transform: rotate(20deg) translateY(-8px); }
+}
+
+
+/* --- KREATIV (creative): dramatic inspired head tilts, painting paw, expressive everything --- */
+.task-kreativ .cat-head {
+    animation: kreativ-head 2.5s ease-in-out infinite;
+}
+.task-kreativ .cat-eye {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    top: 1px;
+    animation: kreativ-eyes 2.5s ease-in-out infinite;
+}
+.task-kreativ .cat-body {
+    animation: kreativ-body 2.5s ease-in-out infinite;
+}
+.task-kreativ .cat-tail {
+    animation: kreativ-tail 1.5s ease-in-out infinite;
+}
+.task-kreativ .cat-leg.front.left {
+    animation: kreativ-paw 2.5s ease-in-out infinite;
+    z-index: 10;
+}
+.task-kreativ .cat-ear.left { animation: kreativ-ear-l 2.5s ease-in-out infinite; }
+.task-kreativ .cat-ear.right { animation: kreativ-ear-r 2.5s ease-in-out infinite; }
+
+@keyframes kreativ-head {
+    0%, 100% { transform: rotate(-8deg) translateY(0); }
+    20% { transform: rotate(15deg) translateY(-4px); }
+    45% { transform: rotate(-12deg) translateY(2px); }
+    70% { transform: rotate(10deg) translateY(-6px); }
+}
+@keyframes kreativ-eyes {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(2px, -2px); }
+    45% { transform: translate(-2px, 1px); }
+    70% { transform: translate(1px, -3px); }
+}
+@keyframes kreativ-body {
+    0%, 100% { transform: scaleX(1) translateX(0); }
+    25% { transform: scaleX(1.06) translateX(3px); }
+    50% { transform: scaleX(0.96) translateX(-2px); }
+    75% { transform: scaleX(1.04) translateX(2px); }
+}
+@keyframes kreativ-tail {
+    0%, 100% { transform: rotate(-30deg); }
+    20% { transform: rotate(-60deg); }
+    40% { transform: rotate(-20deg); }
+    60% { transform: rotate(-55deg); }
+    80% { transform: rotate(-15deg); }
+}
+@keyframes kreativ-paw {
+    /* Painting strokes on the easel */
+    0%, 100% { transform: rotate(-30deg) translate(-6px, -6px); }
+    15% { transform: rotate(-45deg) translate(-10px, -10px); }
+    30% { transform: rotate(-25deg) translate(-4px, -4px); }
+    50% { transform: rotate(-50deg) translate(-8px, -12px); }
+    70% { transform: rotate(-20deg) translate(-5px, -5px); }
+    85% { transform: rotate(-40deg) translate(-9px, -8px); }
+}
+@keyframes kreativ-ear-l {
+    0%, 100% { transform: rotate(-20deg); }
+    25% { transform: rotate(-5deg) translateY(-5px); }
+    60% { transform: rotate(-25deg) translateY(0); }
+}
+@keyframes kreativ-ear-r {
+    0%, 100% { transform: rotate(20deg); }
+    40% { transform: rotate(5deg) translateY(-5px); }
+    75% { transform: rotate(25deg) translateY(0); }
+}
+
+/* --- EINKAUFEN (shopping): pushing cart, brisk trot, looking around --- */
+.task-einkaufen .cat-leg.front.left { animation: einkaufen-leg 0.7s linear infinite; }
+.task-einkaufen .cat-leg.front.right { animation: einkaufen-leg 0.7s linear infinite 0.35s; }
+.task-einkaufen .cat-leg.back.left { animation: einkaufen-leg 0.7s linear infinite 0.35s; }
+.task-einkaufen .cat-leg.back.right { animation: einkaufen-leg 0.7s linear infinite; }
+.task-einkaufen .cat-body {
+    animation: einkaufen-body 0.35s ease-in-out infinite alternate;
+}
+.task-einkaufen .cat-head {
+    animation: einkaufen-head 2.8s ease-in-out infinite;
+}
+.task-einkaufen .cat-tail {
+    animation: einkaufen-tail 0.7s ease-in-out infinite;
+}
+.task-einkaufen .cat-eye {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    top: 2px;
+    animation: blink 2.5s infinite;
+}
+.task-einkaufen .cat-ear.left { animation: einkaufen-ear-l 2.8s ease-in-out infinite; }
+.task-einkaufen .cat-ear.right { animation: einkaufen-ear-r 2.8s ease-in-out infinite; }
+
+@keyframes einkaufen-leg {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(30deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(-30deg); }
+    100% { transform: rotate(0deg); }
+}
+@keyframes einkaufen-body {
+    0% { transform: translateY(0) scaleY(1); }
+    100% { transform: translateY(-4px) scaleY(1.03); }
+}
+@keyframes einkaufen-head {
+    /* Walking forward, glances left then right like checking shelves */
+    0%, 100% { transform: translateY(0) rotate(0); }
+    12% { transform: translateY(-3px) rotate(-10deg); }
+    25% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-2px) rotate(12deg); }
+    65% { transform: translateY(0) rotate(0); }
+}
+@keyframes einkaufen-tail {
+    0%, 100% { transform: rotate(-60deg); }
+    25% { transform: rotate(-75deg); }
+    75% { transform: rotate(-45deg); }
+}
+@keyframes einkaufen-ear-l {
+    0%, 100% { transform: rotate(-12deg); }
+    12% { transform: rotate(-25deg) translateY(-3px); }
+    50% { transform: rotate(-8deg); }
+}
+@keyframes einkaufen-ear-r {
+    0%, 100% { transform: rotate(12deg); }
+    12% { transform: rotate(8deg); }
+    50% { transform: rotate(25deg) translateY(-3px); }
+}

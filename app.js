@@ -192,7 +192,6 @@ const TASK_CATEGORIES = [
     { key: 'entspannen', icon: '\u{1F9D8}' },
     { key: 'kochen',     icon: '\u{1F373}' },
     { key: 'sport',      icon: '\u{1F3C3}' },
-    { key: 'lesen',      icon: '\u{1F4D6}' },
     { key: 'kreativ',    icon: '\u{1F3A8}' },
     { key: 'einkaufen',  icon: '\u{1F6D2}' },
 ];
@@ -204,7 +203,6 @@ const TASK_COLORS = {
     entspannen: '#42A5F5',
     kochen:     '#EF5350',
     sport:      '#66BB6A',
-    lesen:      '#8D6E63',
     kreativ:    '#AB47BC',
     einkaufen:  '#FFA726',
 };
@@ -373,10 +371,18 @@ function initSlotDial() {
         reel.style.transition = 'transform 0.4s cubic-bezier(0.23, 1, 0.32, 1)';
         reel.style.transform = `translateY(-${reelOffset(idx)}px)`;
         items.forEach((item, i) => item.classList.toggle('slot-item-active', i === idx));
+
+        // Preview the matching animation on Hubi
+        if (window.hubiPet) window.hubiPet.setTaskPreview(selectedTask);
     }
 
     // Mark initial active
     items.forEach((item, i) => item.classList.toggle('slot-item-active', i === selectedIndex));
+
+    // After the initial spin lands, preview the selected task on Hubi
+    setTimeout(() => {
+        if (window.hubiPet) window.hubiPet.setTaskPreview(selectedTask);
+    }, 1300);
 
     // Touch drag
     let startY = 0;
@@ -539,6 +545,10 @@ function startWork() {
     };
     ActiveState.set(activeSession);
     showToast(t('toastStartWork'));
+
+    // Hubi jumps down from mascot slot and starts roaming
+    if (window.hubiPet) window.hubiPet.startCycle();
+
     renderActivePage();
 }
 
