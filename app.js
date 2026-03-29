@@ -184,12 +184,48 @@ window.getHubiCatHTML = function(classes = '', id = 'mascot') {
     `;
 };
 
+// ---- Task Categories ----
+const TASK_CATEGORIES = [
+    { key: 'arbeiten',   icon: '\u{1F4BC}' },
+    { key: 'lernen',     icon: '\u{1F4DA}' },
+    { key: 'putzen',     icon: '\u{1F9F9}' },
+    { key: 'entspannen', icon: '\u{1F9D8}' },
+    { key: 'kochen',     icon: '\u{1F373}' },
+    { key: 'sport',      icon: '\u{1F3C3}' },
+    { key: 'lesen',      icon: '\u{1F4D6}' },
+    { key: 'kreativ',    icon: '\u{1F3A8}' },
+    { key: 'einkaufen',  icon: '\u{1F6D2}' },
+];
+
+const TASK_COLORS = {
+    arbeiten:   'var(--orange-primary)',
+    lernen:     '#7E57C2',
+    putzen:     '#26A69A',
+    entspannen: '#42A5F5',
+    kochen:     '#EF5350',
+    sport:      '#66BB6A',
+    lesen:      '#8D6E63',
+    kreativ:    '#AB47BC',
+    einkaufen:  '#FFA726',
+};
+
+function getTaskLabel(key) {
+    const capKey = 'task' + key.charAt(0).toUpperCase() + key.slice(1);
+    return t(capKey) || key;
+}
+
+function getTaskIcon(key) {
+    const cat = TASK_CATEGORIES.find(c => c.key === key);
+    return cat ? cat.icon : '\u{1F4BC}';
+}
+
 // ---- App State ----
 let currentPage = 'timer';
 let timerInterval = null;
+let selectedTask = 'arbeiten';
 
 // Active session fields (persisted via ActiveState)
-let activeSession = null; // { id, startTime, breaks:[], currentBreakStart, status: 'working'|'on-break' }
+let activeSession = null; // { id, startTime, breaks:[], currentBreakStart, status: 'working'|'on-break', task }
 
 // ---- DOM ----
 const appEl = document.getElementById('app');
@@ -263,12 +299,28 @@ function renderTimerPage() {
 }
 
 function renderIdlePage() {
+    const dialItemsHTML = TASK_CATEGORIES.map((cat, i) => `
+        <div class="task-dial-item ${cat.key === selectedTask ? 'active' : ''}" data-task="${cat.key}" data-index="${i}">
+            <span class="task-dial-icon">${cat.icon}</span>
+            <span class="task-dial-name">${getTaskLabel(cat.key)}</span>
+        </div>
+    `).join('');
+
     appEl.innerHTML = `
         <div class="page">
             <div class="page-header">
                 <div class="mascot-container" id="mascot-slot"></div>
-                <h1 class="page-title">${t('readyToWork')}</h1>
+                <h1 class="page-title">${t('selectTask')}</h1>
                 <p class="page-subtitle">${t('hubiWaiting')}</p>
+            </div>
+
+            <div class="task-dial-container">
+                <div class="task-dial" id="task-dial">
+                    <div class="task-dial-track" id="task-dial-track">
+                        ${dialItemsHTML}
+                    </div>
+                </div>
+                <div class="task-dial-indicator"></div>
             </div>
 
             <div class="timer-display">
@@ -287,14 +339,71 @@ function renderIdlePage() {
     `;
 
     document.getElementById('btn-start').addEventListener('click', startWork);
+    initTaskDial();
+}
+
+function initTaskDial() {
+    const dial = document.getElementById('task-dial');
+    const track = document.getElementById('task-dial-track');
+    if (!dial || !track) return;
+
+    const items = track.querySelectorAll('.task-dial-item');
+    const itemWidth = 88; // matches CSS min-width + gap
+
+    // Scroll to selected task
+    const selectedIndex = TASK_CATEGORIES.findIndex(c => c.key === selectedTask);
+    const targetScroll = selectedIndex * itemWidth;
+
+    // Initial spin animation: scroll to end, then back to selected
+    const totalScroll = track.scrollWidth - dial.clientWidth;
+    dial.scrollLeft = totalScroll; // start at end
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            dial.scrollTo({ left: targetScroll, behavior: 'smooth' });
+        });
+    });
+
+    // Update selection on scroll end
+    let scrollTimer = null;
+    dial.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+            const center = dial.scrollLeft + dial.clientWidth / 2;
+            let closest = 0;
+            let closestDist = Infinity;
+            items.forEach((item, i) => {
+                const itemCenter = item.offsetLeft + item.offsetWidth / 2;
+                const dist = Math.abs(center - itemCenter);
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closest = i;
+                }
+            });
+            selectedTask = TASK_CATEGORIES[closest].key;
+            items.forEach((item, i) => {
+                item.classList.toggle('active', i === closest);
+            });
+        }, 80);
+    });
+
+    // Click to select
+    items.forEach((item) => {
+        item.addEventListener('click', () => {
+            const task = item.dataset.task;
+            selectedTask = task;
+            items.forEach(it => it.classList.toggle('active', it.dataset.task === task));
+            dial.scrollTo({ left: item.offsetLeft - (dial.clientWidth - item.offsetWidth) / 2, behavior: 'smooth' });
+        });
+    });
 }
 
 function renderActivePage() {
     const isBreak = activeSession.status === 'on-break';
-    const statusEmoji = isBreak ? '💤' : '⚡';
+    const taskKey = activeSession.task || 'arbeiten';
+    const taskIcon = getTaskIcon(taskKey);
+    const statusEmoji = isBreak ? '💤' : taskIcon;
     const statusClass = isBreak ? 'on-break' : 'working';
-    const mascotClass = isBreak ? 'on-break' : 'working';
-    const statusText = isBreak ? t('takingBreak') : t('workingHard');
+    const statusText = isBreak ? t('takingBreak') : `${taskIcon} ${getTaskLabel(taskKey)}`;
     const subtitleText = isBreak ? t('hubiNapping') : t('hubiBusy');
 
     appEl.innerHTML = `
@@ -399,7 +508,8 @@ function startWork() {
         startTime: Date.now(),
         breaks: [],
         currentBreakStart: null,
-        status: 'working'
+        status: 'working',
+        task: selectedTask || 'arbeiten'
     };
     ActiveState.set(activeSession);
     showToast(t('toastStartWork'));
@@ -470,7 +580,8 @@ function finishWork() {
         endTime: endTime,
         breaks: activeSession.breaks,
         totalWork: totalWorkMs,
-        totalBreak: totalBreakMs
+        totalBreak: totalBreakMs,
+        task: activeSession.task || 'arbeiten'
     };
 
     Storage.addSession(session);
@@ -482,11 +593,13 @@ function finishWork() {
 }
 
 function showSessionSummary(session) {
+    const taskKey = session.task || 'arbeiten';
     appEl.innerHTML = `
         <div class="page">
             <div class="summary-card">
-                <div class="summary-emoji">🎉</div>
+                <div class="summary-emoji">${getTaskIcon(taskKey)}</div>
                 <div class="summary-title">${t('greatWork')}</div>
+                <div class="summary-task">${getTaskLabel(taskKey)}</div>
                 <div class="summary-stats">
                     <div class="summary-stat">
                         <div class="summary-stat-label">${t('work')}</div>
@@ -660,13 +773,14 @@ function renderEmptyHistory() {
 }
 
 function renderSessionCard(session) {
+    const taskKey = session.task || 'arbeiten';
     return `
         <div class="card">
             <button class="card-delete" data-id="${escapeAttr(session.id)}" title="${t('delete')}">✕</button>
             <button class="card-edit" data-id="${escapeAttr(session.id)}" title="${t('edit')}">✏️</button>
             <div class="card-header">
-                <div class="card-title">${formatDate(session.date)}</div>
-                <div class="card-date">${formatTime(session.startTime)} – ${formatTime(session.endTime)}</div>
+                <div class="card-title"><span class="card-task-icon">${getTaskIcon(taskKey)}</span> ${formatDate(session.date)}</div>
+                <div class="card-date">${getTaskLabel(taskKey)} · ${formatTime(session.startTime)} – ${formatTime(session.endTime)}</div>
             </div>
             <div class="card-body">
                 <div class="card-stat">
@@ -1005,6 +1119,10 @@ function renderEditSessionCard(session) {
     const fromTime = new Date(session.startTime).toTimeString().slice(0, 5);
     const toTime = new Date(session.endTime).toTimeString().slice(0, 5);
     const is24h = detectIs24h();
+    const currentTask = session.task || 'arbeiten';
+    const taskOptionsHTML = TASK_CATEGORIES.map(cat =>
+        `<option value="${cat.key}" ${cat.key === currentTask ? 'selected' : ''}>${cat.icon} ${getTaskLabel(cat.key)}</option>`
+    ).join('');
 
     return `
         <div class="card edit-card" id="session-edit-${session.id}">
@@ -1019,6 +1137,12 @@ function renderEditSessionCard(session) {
                 <div class="time-picker-group">
                     <label>${t('to')}</label>
                     ${createCustomTimePicker(`edit-to-${session.id}`, toTime, is24h)}
+                </div>
+                <div class="time-picker-group">
+                    <label>${t('selectTask')}</label>
+                    <select class="task-select" id="edit-task-${session.id}">
+                        ${taskOptionsHTML}
+                    </select>
                 </div>
             </div>
             <div class="card-actions">
@@ -1071,6 +1195,10 @@ function saveSessionEdit(id, fromValue, toValue) {
 
     session.startTime = newStartTs;
     session.endTime = newEndTs;
+
+    // Update task if changed
+    const taskSelect = document.getElementById(`edit-task-${id}`);
+    if (taskSelect) session.task = taskSelect.value;
 
     let breaksWereReset = false;
     if (session.totalBreak > totalElapsed) {
@@ -1162,6 +1290,8 @@ function renderStatsPage() {
 
             ${statsPeriod === 'week' ? renderWeekChart(sessions) : ''}
 
+            ${sessions.length > 0 ? renderTaskBreakdown(sessions) : ''}
+
             ${sessions.length === 0 ? `
                 <div class="empty-state">
                     <div class="empty-state-emoji">📊</div>
@@ -1221,6 +1351,44 @@ function renderWeekChart(sessions) {
             <div class="chart-bars">
                 ${barsHTML}
             </div>
+        </div>
+    `;
+}
+
+function renderTaskBreakdown(sessions) {
+    // Group by task
+    const taskTotals = {};
+    for (const s of sessions) {
+        const key = s.task || 'arbeiten';
+        taskTotals[key] = (taskTotals[key] || 0) + s.totalWork;
+    }
+
+    const entries = Object.entries(taskTotals).sort((a, b) => b[1] - a[1]);
+    const maxMs = entries[0]?.[1] || 1;
+    const totalMs = entries.reduce((sum, [, ms]) => sum + ms, 0);
+
+    const barsHTML = entries.map(([key, ms]) => {
+        const pct = totalMs > 0 ? Math.round((ms / totalMs) * 100) : 0;
+        const barWidth = Math.max((ms / maxMs) * 100, 4);
+        const color = TASK_COLORS[key] || 'var(--orange-primary)';
+        return `
+            <div class="task-breakdown-row">
+                <div class="task-breakdown-label">
+                    <span class="task-breakdown-icon">${getTaskIcon(key)}</span>
+                    <span class="task-breakdown-name">${getTaskLabel(key)}</span>
+                </div>
+                <div class="task-breakdown-bar-wrap">
+                    <div class="task-breakdown-bar" style="width: ${barWidth}%; background: ${color};"></div>
+                </div>
+                <div class="task-breakdown-value">${formatHoursMinutes(ms)} <span class="task-breakdown-pct">${pct}%</span></div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="chart-container">
+            <div class="chart-title">${t('taskBreakdown')}</div>
+            ${barsHTML}
         </div>
     `;
 }

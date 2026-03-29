@@ -234,6 +234,79 @@ body::before {
     opacity: 0.7;
 }
 
+/* --- Task Dial --- */
+.task-dial-container {
+    position: relative;
+    margin: 12px 0 4px;
+}
+
+.task-dial {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 8px 0;
+}
+
+.task-dial::-webkit-scrollbar {
+    display: none;
+}
+
+.task-dial-track {
+    display: flex;
+    gap: 8px;
+    padding: 0 calc(50% - 40px);
+    width: max-content;
+}
+
+.task-dial-item {
+    scroll-snap-align: center;
+    min-width: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 8px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: transform 0.2s var(--transition-bounce), opacity 0.2s ease, background 0.2s ease;
+    opacity: 0.5;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.task-dial-item.active {
+    transform: scale(1.15);
+    opacity: 1;
+    background: var(--white);
+    box-shadow: var(--shadow-soft);
+}
+
+.task-dial-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.task-dial-name {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--chocolate);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.task-dial-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--orange-primary);
+}
+
 /* --- Timer Display --- */
 .timer-display {
     background: var(--white);
@@ -576,6 +649,25 @@ body::before {
     text-transform: uppercase;
     color: var(--gray);
     margin-bottom: 4px;
+}
+
+.task-select {
+    border: 2px solid var(--cream-dark);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    padding: 0 10px;
+    height: 44px;
+    width: 100%;
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--chocolate);
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%238B6547'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
 }
 
 .native-time-picker {
@@ -925,6 +1017,66 @@ body::before {
     white-space: nowrap;
 }
 
+/* --- Task Breakdown --- */
+.task-breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.task-breakdown-row:last-child {
+    margin-bottom: 0;
+}
+
+.task-breakdown-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 90px;
+    flex-shrink: 0;
+}
+
+.task-breakdown-icon {
+    font-size: 1rem;
+}
+
+.task-breakdown-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--chocolate);
+    white-space: nowrap;
+}
+
+.task-breakdown-bar-wrap {
+    flex: 1;
+    height: 10px;
+    background: var(--cream);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.task-breakdown-bar {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.6s var(--transition-bounce);
+}
+
+.task-breakdown-value {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--chocolate);
+    min-width: 70px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.task-breakdown-pct {
+    font-weight: 600;
+    color: var(--gray);
+    font-size: 0.65rem;
+}
+
 /* --- Hubi Insight --- */
 .hubi-insight {
     background: linear-gradient(135deg, var(--orange-primary), var(--orange-secondary));
@@ -1250,7 +1402,17 @@ body::before {
     font-size: 1.3rem;
     font-weight: 900;
     color: var(--chocolate);
+    margin-bottom: 4px;
+}
+
+.summary-task {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--brown-warm);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     margin-bottom: 16px;
+    opacity: 0.7;
 }
 
 .summary-stats {

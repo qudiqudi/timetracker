@@ -149,6 +149,7 @@ function sanitizeSessions(incoming) {
             totalWork: typeof s.totalWork === 'number' ? Number(s.totalWork) : 0,
             totalBreak: typeof s.totalBreak === 'number' ? Number(s.totalBreak) : 0,
         };
+        if (typeof s.task === 'string') out.task = s.task.replace(/[^a-z0-9äöü]/gi, '').slice(0, 30);
         if (typeof s.updatedAt === 'number') out.updatedAt = s.updatedAt;
         if (typeof s.deletedAt === 'number') out.deletedAt = s.deletedAt;
         return out;
@@ -172,7 +173,7 @@ function exportCSV() {
         return;
     }
 
-    const rows = [['Date', 'Start Time', 'End Time', 'Work Duration', 'Break Duration', 'Total Duration']];
+    const rows = [['Date', 'Start Time', 'End Time', 'Work Duration', 'Break Duration', 'Total Duration', 'Task']];
 
     for (const s of sessions) {
         const start = new Date(s.startTime);
@@ -183,7 +184,8 @@ function exportCSV() {
         const work = fmtDuration(s.totalWork || 0);
         const brk = fmtDuration(s.totalBreak || 0);
         const total = fmtDuration((s.totalWork || 0) + (s.totalBreak || 0));
-        rows.push([dateStr, startTime, endTime, work, brk, total]);
+        const task = s.task || 'arbeiten';
+        rows.push([dateStr, startTime, endTime, work, brk, total, task]);
     }
 
     const csv = rows.map(r => r.join(',')).join('\n');

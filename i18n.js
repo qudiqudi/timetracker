@@ -152,6 +152,19 @@ const I18n = (() => {
             disconnectConfirm: 'Disconnect cloud sync?',
             disconnectDesc: 'Your data stays on this device. You can reconnect anytime with the same phrase.',
 
+            // Task categories
+            taskArbeiten: 'Work',
+            taskLernen: 'Study',
+            taskPutzen: 'Cleaning',
+            taskEntspannen: 'Relax',
+            taskKochen: 'Cooking',
+            taskSport: 'Sports',
+            taskLesen: 'Reading',
+            taskKreativ: 'Creative',
+            taskEinkaufen: 'Shopping',
+            selectTask: 'What are you doing?',
+            taskBreakdown: 'By Task',
+
             // Changelog
             whatsNew: "What's new",
             whatsNewCloudSyncTitle: "Cloud Sync",
@@ -307,6 +320,19 @@ const I18n = (() => {
             manualTransfer: 'Manueller Transfer',
             disconnectConfirm: 'Cloud-Sync trennen?',
             disconnectDesc: 'Deine Daten bleiben auf diesem Gerät. Du kannst dich jederzeit mit derselben Phrase wieder verbinden.',
+
+            // Task categories
+            taskArbeiten: 'Arbeiten',
+            taskLernen: 'Lernen',
+            taskPutzen: 'Putzen',
+            taskEntspannen: 'Entspannen',
+            taskKochen: 'Kochen',
+            taskSport: 'Sport',
+            taskLesen: 'Lesen',
+            taskKreativ: 'Kreativ',
+            taskEinkaufen: 'Einkaufen',
+            selectTask: 'Was machst du?',
+            taskBreakdown: 'Nach Aufgabe',
 
             // Changelog
             whatsNew: "Was gibt's Neues",
