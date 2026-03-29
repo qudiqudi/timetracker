@@ -234,12 +234,11 @@ function mergeSessions(existing, incoming) {
 // ---- Cloud Sync ----
 
 const CloudSync = {
-    _intervalId: null,
     _pushDebounce: null,
     _syncing: false,
     _pendingSync: false,
     _lastError: null,
-    INTERVAL_MS: 15 * 60 * 1000,
+    _dirty: false,
 
     getPhrase() {
         return localStorage.getItem(SYNC_PHRASE_KEY) || null;
@@ -252,7 +251,7 @@ const CloudSync = {
     clearPhrase() {
         localStorage.removeItem(SYNC_PHRASE_KEY);
         localStorage.removeItem(SYNC_LAST_KEY);
-        this.stopAutoSync();
+        clearTimeout(this._pushDebounce);
     },
 
     isPaired() {
@@ -315,7 +314,11 @@ const CloudSync = {
         this._syncing = true;
         try {
             await this.pull(phrase);
-            await this.push(phrase);
+            if (this._dirty) {
+                this._dirty = false;
+                try { await this.push(phrase); }
+                catch (e) { this._dirty = true; throw e; }
+            }
             localStorage.setItem(SYNC_LAST_KEY, new Date().toISOString());
             this._lastError = null;
         } catch (e) {
@@ -335,16 +338,7 @@ const CloudSync = {
 
     startAutoSync() {
         if (!this.isPaired()) return;
-        this.stopAutoSync();
         this.sync();
-        this._intervalId = setInterval(() => this.sync(), this.INTERVAL_MS);
-    },
-
-    stopAutoSync() {
-        if (this._intervalId) {
-            clearInterval(this._intervalId);
-            this._intervalId = null;
-        }
     },
 
     schedulePush() {
@@ -358,6 +352,7 @@ const CloudSync = {
 const _origSave = Storage.saveSessions.bind(Storage);
 Storage.saveSessions = function(sessions) {
     _origSave(sessions);
+    CloudSync._dirty = true;
     CloudSync.schedulePush();
 };
 
@@ -365,11 +360,13 @@ Storage.saveSessions = function(sessions) {
 const _origActiveSet = ActiveState.set.bind(ActiveState);
 ActiveState.set = function(state) {
     _origActiveSet(state);
+    CloudSync._dirty = true;
     CloudSync.schedulePush();
 };
 const _origActiveClear = ActiveState.clear.bind(ActiveState);
 ActiveState.clear = function() {
     _origActiveClear();
+    CloudSync._dirty = true;
     CloudSync.schedulePush();
 };
 
@@ -885,9 +882,14 @@ function renderImportPage(appEl) {
 // Start auto-sync if previously paired
 CloudSync.startAutoSync();
 
-// Sync when app returns to foreground (catches interrupted pushes on mobile)
+// Sync when app returns to foreground or tab gains focus
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && CloudSync.isPaired()) {
+        CloudSync.sync();
+    }
+});
+window.addEventListener('focus', () => {
+    if (CloudSync.isPaired()) {
         CloudSync.sync();
     }
 });

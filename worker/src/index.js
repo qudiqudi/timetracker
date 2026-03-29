@@ -28,24 +28,7 @@ export default {
 		if (!match) return new Response('Not found', { status: 404, headers });
 		const key = match[1];
 
-		// Rate limiting: 30 writes per minute per channel
 		if (request.method === 'PUT') {
-			const rlKey = `rl:${key}`;
-			const now = Math.floor(Date.now() / 1000);
-			const window = 60;
-			const limit = 30;
-
-			const rlRaw = await env.SYNC_KV.get(rlKey);
-			let rl = rlRaw ? JSON.parse(rlRaw) : { count: 0, start: now };
-			if (now - rl.start > window) {
-				rl = { count: 0, start: now };
-			}
-			rl.count++;
-			if (rl.count > limit) {
-				return new Response('Rate limited', { status: 429, headers: { ...headers, 'Retry-After': String(window - (now - rl.start)) } });
-			}
-			await env.SYNC_KV.put(rlKey, JSON.stringify(rl), { expirationTtl: window * 2 });
-
 			const body = await request.text();
 			if (body.length > 512 * 1024) return new Response('Too large', { status: 413, headers });
 			if (!body.startsWith('HUBI2:')) return new Response('Invalid format', { status: 400, headers });
