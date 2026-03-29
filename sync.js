@@ -184,8 +184,9 @@ function exportCSV() {
         const work = fmtDuration(s.totalWork || 0);
         const brk = fmtDuration(s.totalBreak || 0);
         const total = fmtDuration((s.totalWork || 0) + (s.totalBreak || 0));
-        const task = s.task || 'arbeiten';
-        rows.push([dateStr, startTime, endTime, work, brk, total, task]);
+        const taskKey = s.task || 'arbeiten';
+        const taskLabel = t('task' + taskKey.charAt(0).toUpperCase() + taskKey.slice(1)) || taskKey;
+        rows.push([dateStr, startTime, endTime, work, brk, total, taskLabel]);
     }
 
     const csv = rows.map(r => r.join(',')).join('\n');

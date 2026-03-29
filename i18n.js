@@ -11,15 +11,13 @@ const I18n = (() => {
             navStats: 'Stats',
 
             // Timer - idle
-            readyToWork: 'Ready to work?',
-            readyToPrefix: 'Ready to',
+            readyToPrefix: 'Time for',
             readyToSuffix: '?',
             hubiWaiting: 'Hubi is waiting for you!',
             elapsedTime: 'Elapsed Time',
-            startWorking: 'Start Working',
+            startWorking: "Let's go!",
 
             // Timer - active
-            workingHard: 'Working hard!',
             takingBreak: 'Taking a break...',
             hubiBusy: 'Hubi is busy! 🐱',
             hubiNapping: 'Hubi is napping 😴',
@@ -28,18 +26,18 @@ const I18n = (() => {
             startedAt: 'Started at',
             totalWork: 'Total Work',
             totalBreak: 'Total Break',
-            resumeWorking: 'Resume Working',
+            resumeWorking: 'Resume',
             takeBreak: 'Take a Break',
-            finishWork: 'Finish Work',
+            finishWork: 'Finish',
 
             // Timer - finish dialog
-            finishQuestion: 'Finish work?',
+            finishQuestion: 'Finish session?',
             finishDescription: 'Hubi will save this session to your history.',
             finish: 'Finish',
             cancel: 'Cancel',
 
             // Session summary
-            greatWork: 'Great work today!',
+            greatWork: 'Well done!',
             work: 'Work',
             breaks: 'Breaks',
             total: 'Total',
@@ -73,7 +71,7 @@ const I18n = (() => {
             month: 'Month',
             allTime: 'All Time',
             totalBreaks: 'Total Breaks',
-            daysWorked: 'Days Worked',
+            daysWorked: 'Days Tracked',
             avgPerDay: 'Avg / Day',
             thisWeek: 'This Week 🐾',
             noDataPeriod: 'No data for this period',
@@ -82,7 +80,7 @@ const I18n = (() => {
             // Insights
             insightWaiting: 'Hubi is waiting for you to start tracking! 🐱',
             insightNoSessions: "No sessions yet — let's get started! 😺",
-            insightBored: 'Hubi is bored... time to track some work! 🐾',
+            insightBored: 'Hubi is bored... time to track something! 🐾',
             insightWeek40: (h) => `Wow! ${h}h this week! Hubi is impressed! 😻 Don't forget to rest!`,
             insightWeek30: (h) => `${h}h this week — you're on fire! 🔥 Hubi approves!`,
             insightWeek20: (h) => `${h}h this week. Nice pace! Hubi is purring with pride! 😺`,
@@ -93,9 +91,9 @@ const I18n = (() => {
             insightAll: (h, d) => `${h} total hours tracked across ${d} days! Hubi is proud! 🏆🐱`,
 
             // Toasts
-            toastStartWork: "🐾 Let's get to work!",
+            toastStartWork: "🐾 Let's go!",
             toastBreak: '☕ Break time! Hubi is napping...',
-            toastResume: '🐾 Back to work!',
+            toastResume: '🐾 Back at it!',
             toastTreat: '🎉 4 hours done! Hubi earned a treat — click the box!',
 
             // Sync
@@ -158,10 +156,10 @@ const I18n = (() => {
             taskArbeiten: 'Work',
             taskLernen: 'Study',
             taskPutzen: 'Cleaning',
-            taskEntspannen: 'Relax',
+            taskEntspannen: 'Relaxing',
             taskKochen: 'Cooking',
             taskSport: 'Sports',
-            taskKreativ: 'Creative',
+            taskKreativ: 'Creativity',
             taskEinkaufen: 'Shopping',
             selectTask: 'What are you doing?',
             taskBreakdown: 'By Task',
@@ -181,15 +179,13 @@ const I18n = (() => {
             navStats: 'Statistik',
 
             // Timer - idle
-            readyToWork: 'Bereit zu arbeiten?',
-            readyToPrefix: 'Bereit zu',
+            readyToPrefix: 'Lust auf',
             readyToSuffix: '?',
             hubiWaiting: 'Hubi wartet auf dich!',
             elapsedTime: 'Vergangene Zeit',
-            startWorking: 'Arbeit starten',
+            startWorking: 'Los geht\'s!',
 
             // Timer - active
-            workingHard: 'Fleißig am Arbeiten!',
             takingBreak: 'Pause machen...',
             hubiBusy: 'Hubi ist beschäftigt! 🐱',
             hubiNapping: 'Hubi macht ein Nickerchen 😴',
@@ -198,18 +194,18 @@ const I18n = (() => {
             startedAt: 'Gestartet um',
             totalWork: 'Gesamte Arbeit',
             totalBreak: 'Gesamte Pause',
-            resumeWorking: 'Weiterarbeiten',
+            resumeWorking: 'Weiter',
             takeBreak: 'Pause machen',
-            finishWork: 'Arbeit beenden',
+            finishWork: 'Beenden',
 
             // Timer - finish dialog
-            finishQuestion: 'Arbeit beenden?',
+            finishQuestion: 'Sitzung beenden?',
             finishDescription: 'Hubi speichert diese Sitzung in deinem Verlauf.',
             finish: 'Beenden',
             cancel: 'Abbrechen',
 
             // Session summary
-            greatWork: 'Tolle Arbeit heute!',
+            greatWork: 'Gut gemacht!',
             work: 'Arbeit',
             breaks: 'Pausen',
             total: 'Gesamt',
@@ -243,7 +239,7 @@ const I18n = (() => {
             month: 'Monat',
             allTime: 'Gesamt',
             totalBreaks: 'Gesamte Pausen',
-            daysWorked: 'Arbeitstage',
+            daysWorked: 'Aktive Tage',
             avgPerDay: 'Ø / Tag',
             thisWeek: 'Diese Woche 🐾',
             noDataPeriod: 'Keine Daten für diesen Zeitraum',
@@ -252,7 +248,7 @@ const I18n = (() => {
             // Insights
             insightWaiting: 'Hubi wartet darauf, dass du anfängst! 🐱',
             insightNoSessions: 'Noch keine Sitzungen — lass uns loslegen! 😺',
-            insightBored: 'Hubi langweilt sich... Zeit für Arbeit! 🐾',
+            insightBored: 'Hubi langweilt sich... Zeit loszulegen! 🐾',
             insightWeek40: (h) => `Wow! ${h}h diese Woche! Hubi ist beeindruckt! 😻 Vergiss die Pausen nicht!`,
             insightWeek30: (h) => `${h}h diese Woche — du bist on fire! 🔥 Hubi ist stolz!`,
             insightWeek20: (h) => `${h}h diese Woche. Gutes Tempo! Hubi schnurrt vor Stolz! 😺`,
@@ -265,7 +261,7 @@ const I18n = (() => {
             // Toasts
             toastStartWork: '🐾 Auf geht\'s!',
             toastBreak: '☕ Pausenzeit! Hubi macht ein Nickerchen...',
-            toastResume: '🐾 Zurück an die Arbeit!',
+            toastResume: '🐾 Weiter geht\'s!',
             toastTreat: '🎉 4 Stunden geschafft! Hubi hat sich ein Leckerli verdient — klick auf die Box!',
 
             // Sync
