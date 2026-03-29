@@ -1971,6 +1971,8 @@ body::before {
 .prop-pot {
     display: block;
     position: absolute;
+    bottom: -14px;
+    left: -30px;
 }
 .pot-body {
     display: block;
