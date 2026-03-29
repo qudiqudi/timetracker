@@ -1251,6 +1251,7 @@ function saveSessionEdit(id, fromValue, toValue) {
 
     session.startTime = newStartTs;
     session.endTime = newEndTs;
+    session.updatedAt = Date.now();
 
     // Update task if changed
     const taskSelect = document.getElementById(`edit-task-${id}`);
