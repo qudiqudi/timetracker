@@ -121,8 +121,16 @@ async function decryptData(blob, phrase) {
 // ---- Phrase Generation ----
 
 function generatePhrase() {
-    const indices = crypto.getRandomValues(new Uint8Array(12));
-    return Array.from(indices, i => WORDS[i]).join(' ');
+    const picked = new Set();
+    const result = [];
+    while (result.length < 12) {
+        const [idx] = crypto.getRandomValues(new Uint8Array(1));
+        if (!picked.has(idx)) {
+            picked.add(idx);
+            result.push(WORDS[idx]);
+        }
+    }
+    return result.join(' ');
 }
 
 function validatePhrase(phrase) {
