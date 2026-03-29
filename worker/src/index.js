@@ -37,7 +37,8 @@ async function trackBeacon(env, request) {
 
 	// Count page views by tab
 	try {
-		const body = await request.json();
+		const text = await request.text();
+		const body = JSON.parse(text);
 		if (body.page && typeof body.page === 'string') {
 			const page = body.page.slice(0, 20);
 			b.pages[page] = (b.pages[page] || 0) + 1;
