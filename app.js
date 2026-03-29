@@ -397,10 +397,12 @@ function initSlotDial() {
     // Touch drag
     let startY = 0;
     let isDragging = false;
+    let touchedRecently = false;
 
     slotWindow.addEventListener('touchstart', (e) => {
         startY = e.touches[0].clientY;
         isDragging = true;
+        touchedRecently = true;
         reel.style.transition = 'none';
     }, { passive: true });
 
@@ -416,8 +418,15 @@ function initSlotDial() {
         isDragging = false;
         const dy = e.changedTouches[0].clientY - startY;
         const shift = Math.round(-dy / ITEM_H);
-        const newIdx = Math.max(0, Math.min(items.length - 1, currentIndex + shift));
-        snapToIndex(newIdx);
+        if (shift === 0) {
+            // Tap (no drag) -- cycle forward with wrap, same as click
+            snapToIndex((currentIndex + 1) % items.length);
+        } else {
+            // Swipe -- clamp to valid range
+            snapToIndex(Math.max(0, Math.min(items.length - 1, currentIndex + shift)));
+        }
+        // Suppress the synthetic click that fires after touchend
+        setTimeout(() => { touchedRecently = false; }, 300);
     });
 
     // Mouse wheel -- debounced so trackpad doesn't fire too fast
@@ -433,8 +442,9 @@ function initSlotDial() {
         snapToIndex(newIdx);
     }, { passive: false });
 
-    // Click to cycle
+    // Click to cycle (mouse only -- touch is handled above)
     slotWindow.addEventListener('click', () => {
+        if (touchedRecently) return;
         snapToIndex((currentIndex + 1) % items.length);
     });
 }

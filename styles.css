@@ -2473,6 +2473,12 @@ body::before {
     display: none;
 }
 
+@media (max-width: 380px) {
+    .page-title.slot-title {
+        font-size: 1.3rem;
+    }
+}
+
 @media (max-width: 520px) {
     body {
         position: relative;
