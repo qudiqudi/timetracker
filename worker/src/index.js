@@ -33,22 +33,7 @@ export default {
 			if (body.length > 512 * 1024) return new Response('Too large', { status: 413, headers });
 			if (!body.startsWith('HUBI2:')) return new Response('Invalid format', { status: 400, headers });
 
-			// Rate limit: 10 writes per minute per channel
-			const rlKey = `rl:${key}`;
-			const window = 60;
-			const limit = 10;
-			const now = Math.floor(Date.now() / 1000);
-			const rlRaw = await env.SYNC_KV.get(rlKey);
-			let rl = rlRaw ? JSON.parse(rlRaw) : { c: 0, t: now };
-			if (now - rl.t > window) rl = { c: 0, t: now };
-			if (++rl.c > limit) {
-				return new Response('Rate limited', { status: 429, headers: { ...headers, 'Retry-After': String(window - (now - rl.t)) } });
-			}
-
-			await Promise.all([
-				env.SYNC_KV.put(key, body, { expirationTtl: 30 * 86400 }),
-				env.SYNC_KV.put(rlKey, JSON.stringify(rl), { expirationTtl: window * 2 }),
-			]);
+			await env.SYNC_KV.put(key, body, { expirationTtl: 30 * 86400 });
 			return new Response(null, { status: 204, headers });
 		}
 
