@@ -205,9 +205,16 @@ navBtns.forEach(btn => {
     });
 });
 
+// ---- Page View Beacon ----
+function sendBeacon(page) {
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+    try { navigator.sendBeacon('https://sync.hubi.work/beacon', JSON.stringify({ page })); } catch {}
+}
+
 function navigateTo(page) {
     currentPage = page;
     navBtns.forEach(b => b.classList.toggle('active', b.dataset.page === page));
+    sendBeacon(page);
     renderPage();
 }
 
@@ -1358,4 +1365,5 @@ function showChangelog() {
 
 // ---- Initialize ----
 renderPage();
+sendBeacon(currentPage);
 showChangelog();

@@ -15,6 +15,38 @@ function corsHeaders(request) {
 	};
 }
 
+// --- Beacon (page analytics) ---
+
+async function hashIP(ip, date) {
+	const data = new TextEncoder().encode(ip + ':' + date);
+	const hash = await crypto.subtle.digest('SHA-256', data);
+	return [...new Uint8Array(hash)].slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function trackBeacon(env, request) {
+	const date = new Date().toISOString().slice(0, 10);
+	const key = `_b:${date}`;
+	const b = await env.SYNC_KV.get(key, 'json') || { views: 0, visitors: [], pages: {} };
+
+	b.views++;
+
+	// Count unique visitors by hashed IP (rotates daily, not reversible)
+	const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+	const ipHash = await hashIP(ip, date);
+	if (!b.visitors.includes(ipHash)) b.visitors.push(ipHash);
+
+	// Count page views by tab
+	try {
+		const body = await request.json();
+		if (body.page && typeof body.page === 'string') {
+			const page = body.page.slice(0, 20);
+			b.pages[page] = (b.pages[page] || 0) + 1;
+		}
+	} catch {}
+
+	await env.SYNC_KV.put(key, JSON.stringify(b), { expirationTtl: METRICS_TTL });
+}
+
 // --- Metrics ---
 
 const METRICS_TTL = 90 * 86400; // 90 days
@@ -98,6 +130,15 @@ async function fetchCfAnalytics(env, fromDate, toDate) {
 
 // --- Grafana Simple JSON datasource ---
 
+const BEACON_METRICS = [
+	'page_views',
+	'unique_visitors',
+	'page_timer',
+	'page_history',
+	'page_stats',
+	'page_sync',
+];
+
 const KV_METRICS = [
 	'requests_get',
 	'requests_put',
@@ -118,7 +159,16 @@ const CF_METRICS = [
 	'cf_status_5xx',
 ];
 
-const ALL_METRICS = [...KV_METRICS, ...CF_METRICS];
+const ALL_METRICS = [...BEACON_METRICS, ...KV_METRICS, ...CF_METRICS];
+
+const BEACON_EXTRACTORS = {
+	page_views: d => d.views,
+	unique_visitors: d => (d.visitors || []).length,
+	page_timer: d => (d.pages || {}).timer || 0,
+	page_history: d => (d.pages || {}).history || 0,
+	page_stats: d => (d.pages || {}).stats || 0,
+	page_sync: d => (d.pages || {}).sync || 0,
+};
 
 const KV_EXTRACTORS = {
 	requests_get: d => d.get,
@@ -175,14 +225,21 @@ async function handleGrafana(request, env, url) {
 		const toDate = dates[dates.length - 1];
 
 		const wantsCf = body.targets.some(t => t.target.startsWith('cf_'));
-		const wantsKv = body.targets.some(t => !t.target.startsWith('cf_'));
+		const wantsKv = body.targets.some(t => KV_METRICS.includes(t.target));
+		const wantsBeacon = body.targets.some(t => t.target.startsWith('page_') || t.target === 'unique_visitors');
 
-		// Fetch KV metrics and CF analytics in parallel
-		const [kvEntries, cfData] = await Promise.all([
+		// Fetch all data sources in parallel
+		const [kvEntries, beaconEntries, cfData] = await Promise.all([
 			wantsKv ? Promise.all(
 				dates.map(async date => {
 					const data = await env.SYNC_KV.get(`_m:${date}`, 'json');
 					return { date, ts: new Date(date + 'T12:00:00Z').getTime(), data: data || { get: 0, put: 0, hit: 0, miss: 0, err: 0, bytes: 0, ch: [] } };
+				})
+			) : Promise.resolve(null),
+			wantsBeacon ? Promise.all(
+				dates.map(async date => {
+					const data = await env.SYNC_KV.get(`_b:${date}`, 'json');
+					return { date, ts: new Date(date + 'T12:00:00Z').getTime(), data: data || { views: 0, visitors: [], pages: {} } };
 				})
 			) : Promise.resolve(null),
 			wantsCf ? fetchCfAnalytics(env, fromDate, toDate) : Promise.resolve(null),
@@ -198,6 +255,12 @@ async function handleGrafana(request, env, url) {
 						extractor?.(cfData?.[date] || empty) ?? 0,
 						new Date(date + 'T12:00:00Z').getTime(),
 					]),
+				};
+			}
+			if (BEACON_EXTRACTORS[t.target]) {
+				return {
+					target: t.target,
+					datapoints: beaconEntries.map(e => [BEACON_EXTRACTORS[t.target](e.data), e.ts]),
 				};
 			}
 			return {
@@ -226,6 +289,12 @@ export default {
 		const headers = corsHeaders(request);
 
 		if (request.method === 'OPTIONS') {
+			return new Response(null, { status: 204, headers });
+		}
+
+		// Page view beacon
+		if (url.pathname === '/beacon' && request.method === 'POST') {
+			ctx.waitUntil(trackBeacon(env, request));
 			return new Response(null, { status: 204, headers });
 		}
 
