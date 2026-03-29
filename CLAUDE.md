@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-"Hubi Time Tracker" -- a cat-themed PWA for tracking work hours. Pure vanilla JS, no build tools, no framework, no package manager. Static files served directly.
+"Hubi Time Tracker" -- a cat-themed PWA for tracking work hours with task categories. Pure vanilla JS, no build tools, no framework, no package manager. Static files served directly.
 
 ## Development
 
@@ -21,15 +21,15 @@ The app is hosted at `https://hubi.work`. Domain is registered via Cloudflare Re
 
 - `index.html` -- shell with bottom nav (timer/history/stats/sync tabs), loads everything else
 - `i18n.js` -- internationalization module. Detects browser locale, falls back to English. Exposes `I18n.t(key)`, `I18n.getLocale()`, and `I18n.lang`. Currently supports `en` and `de`.
-- `app.js` -- all app logic: SPA routing, timer, session management, history, stats. Renders pages by replacing `#app` innerHTML. No framework, no components, just functions. All user-facing strings go through `t()` from `i18n.js`.
-- `pet.js` -- `HubiPet` class: a roaming cat sprite that walks, sleeps, eats, and chases toys around the screen. Independent of app logic. On page load the pet starts sitting in the header mascot slot, then jumps down in a parabolic arc. It avoids UI elements by computing safe zones (left/right/below the `#app` content column). The cat is interactive -- clicking/tapping the sprite triggers a "petted" reaction (nuzzle, purr squish, heart float, ears perk up) and has a 50% chance of playing a random meow sound from `assets/meow{1,2,3}.mp3`.
+- `app.js` -- all app logic: SPA routing, timer, session management, history, stats, task categories. Renders pages by replacing `#app` innerHTML. No framework, no components, just functions. All user-facing strings go through `t()` from `i18n.js`. Defines `TASK_CATEGORIES` (arbeiten, lernen, putzen, entspannen, kochen, sport, kreativ, einkaufen) and `TASK_COLORS`. The idle timer page embeds a slot-machine reel in the title text for task selection (scroll/swipe/click to cycle). Stats page shows per-task time breakdown.
+- `pet.js` -- `HubiPet` class: a roaming cat sprite that walks, sleeps, eats, and chases toys around the screen. On page load the pet starts sitting in the header mascot slot, then jumps down in a parabolic arc. It avoids UI elements by computing safe zones (left/right/below the `#app` content column). The cat is interactive -- clicking/tapping the sprite triggers a "petted" reaction (nuzzle, purr squish, heart float, ears perk up) and has a 50% chance of playing a random meow sound from `assets/meow{1,2,3}.mp3`. While in the mascot slot, Hubi reacts to task reel scrolling with per-task preview animations and props (e.g. book for lernen, chef hat for kochen, easel for kreativ, shopping cart for einkaufen). She hides from the mascot slot when navigating away from the timer page.
 - `styles.css` -- app styles
-- `pet.css` -- CSS-only cat sprite and pet animations (idle, walking, sleeping, eating, chasing, petted, treat)
+- `pet.css` -- CSS-only cat sprite and pet animations (idle, walking, sleeping, eating, chasing, petted, treat, plus per-task preview poses with props)
 - `dev.js` -- dev menu for testing animations. Localhost-only (conditionally loaded via `index.html`), excluded from deploy by the GitHub Actions workflow. Floating draggable panel with buttons for each animation state + treat trigger/reset.
 - `sync.js` -- cross-device sync module. Two sync modes:
   - **Cloud Sync**: event-driven sync via Cloudflare Workers + KV. A `CloudSync` object manages pairing (phrase stored in localStorage) and sync triggers: monkey-patched `Storage.saveSessions`/`ActiveState.set`/`ActiveState.clear` set a dirty flag and schedule a debounced push; `visibilitychange` triggers a pull (push only if dirty); page load triggers an initial sync. No polling interval. The channel ID is derived as SHA-256("channel:" + phrase), separate from the encryption key derivation. The worker at `sync.hubi.work` is a dumb PUT/GET relay (30-day TTL, 512KB max). E2E encrypted -- the worker only sees opaque blobs.
   - **QR/Manual Sync**: one-shot transfer. Export generates a combined QR code (phrase + encrypted data) that the importing device scans. Manual fallback: copy phrase + encrypted blob separately.
-  - Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation with random salt) using a 12-word cat-themed seed phrase (256-word vocabulary, no prefix-ambiguous pairs, 96 bits entropy). Export format is HUBI2 (random per-export PBKDF2 salt). Phrase inputs have wallet-style autocomplete (type a few chars, dropdown suggests matching words). Also provides CSV export. Merge logic deduplicates sessions by ID, keeps later `endTime`. Imported sessions are sanitized (type-checked, fields whitelist-mapped) via `sanitizeSessions()` before storage.
+  - Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation with random salt) using a 12-word cat-themed seed phrase (256-word vocabulary, no prefix-ambiguous pairs, all 12 words unique per phrase). Export format is HUBI2 (random per-export PBKDF2 salt). Phrase inputs have wallet-style autocomplete (type a few chars, dropdown suggests matching words). Also provides CSV export. Merge logic deduplicates sessions by ID, keeps later `endTime`. Imported sessions are sanitized (type-checked, fields whitelist-mapped including `task`) via `sanitizeSessions()` before storage.
 - `worker/` -- Cloudflare Worker for cloud sync relay + metrics. `wrangler.toml` + `src/index.js`. Deployed to `sync.hubi.work`. KV namespace `SYNC_KV` stores encrypted blobs keyed by 64-char hex channel IDs. CORS restricted to `hubi.work` + localhost. Rate-limited at the edge via Cloudflare WAF rule (5 PUT/10s per IP). Validates PUT body starts with `HUBI2:` and enforces 512KB size limit.
   - **Metrics & analytics**: The worker tracks three types of metrics, all stored as daily KV buckets:
     - `_m:YYYY-MM-DD` -- sync request counters (GET/PUT, KV hits/misses, errors, bytes, unique channel prefixes). Updated via `ctx.waitUntil()` on each sync request.
@@ -45,7 +45,7 @@ The app is hosted at `https://hubi.work`. Domain is registered via Cloudflare Re
 ## Data layer
 
 All data lives in `localStorage`:
-- `hubi_sessions` -- array of completed session records (work/break durations, timestamps)
+- `hubi_sessions` -- array of completed session records (work/break durations, timestamps, task category)
 - `hubi_active_state` -- current in-progress timer state (survives page refresh)
 - `hubi_treat_date` -- ISO date string of last treat given (prevents multiple treats per day)
 - `hubi_sync_phrase` -- stored cloud sync phrase (present when paired)
@@ -62,7 +62,7 @@ To add a new language: add a translation object to the `translations` map in `i1
 ## Key patterns
 
 - Pages render by replacing `appEl.innerHTML` with template literal HTML, then attaching event listeners imperatively. There is no virtual DOM or diffing. User-sourced data (e.g. imported session IDs) is escaped via `escapeAttr()` before insertion into attributes.
-- The timer page has three render states: idle, active (working/on-break), and session summary.
+- The timer page has three render states: idle (with task reel selector), active (working/on-break), and session summary.
 - `window.getHubiCatHTML()` generates the CSS cat markup. Only one cat instance exists at a time -- the roaming pet. Pages no longer render static mascot cats; they use an empty `#mascot-slot` div to reserve header space.
 - The "Pawsome!" button text is always in English, never translated.
 - A Content-Security-Policy meta tag in `index.html` restricts resource origins. The `script-src` includes a sha256 hash for the inline dev.js loader script (lines 51-57). If that inline script changes, the hash must be regenerated (`echo -n '<script content>' | openssl dgst -sha256 -binary | base64`) and updated in the CSP.
