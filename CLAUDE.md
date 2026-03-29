@@ -14,8 +14,8 @@ Open `index.html` in a browser. No build step, no dev server required. For servi
 
 The app is hosted at `https://hubi.work`. Domain is registered via Cloudflare Registrar, DNS points to GitHub Pages (A records, DNS-only / not proxied).
 
-- **Frontend**: GitHub Pages. Pushes to `main` auto-deploy via `.github/workflows/deploy.yml`. The workflow removes dev-only files (`dev.js`) and the `worker/` directory, then uploads the repo root as a static site. The `CNAME` file in the repo root tells GitHub Pages to serve on `hubi.work`.
-- **Sync API**: Cloudflare Worker at `sync.hubi.work` (custom domain on the worker). Deployed separately via `wrangler deploy` from the `worker/` directory.
+- **Frontend**: GitHub Pages. Pushes to `main` auto-deploy via `.github/workflows/deploy.yml`. The `pages` job removes dev-only files (`dev.js`) and the `worker/` directory, then uploads the repo root as a static site. The `CNAME` file in the repo root tells GitHub Pages to serve on `hubi.work`.
+- **Sync API**: Cloudflare Worker at `sync.hubi.work` (custom domain on the worker). The `worker` job in the same workflow deploys via `cloudflare/wrangler-action`. Requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub repo secrets.
 
 ## Architecture
 
