@@ -1854,8 +1854,8 @@ body::before {
 }
 #hubi-pet.task-entspannen .prop-dream {
     opacity: 1;
-    top: -36px;
-    right: -20px;
+    top: -18px;
+    right: -24px;
     z-index: 10;
     animation: dreamFloat 4s ease-in-out infinite;
 }
