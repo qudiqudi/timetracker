@@ -299,28 +299,25 @@ function renderTimerPage() {
 }
 
 function renderIdlePage() {
-    const dialItemsHTML = TASK_CATEGORIES.map((cat, i) => `
-        <div class="task-dial-item ${cat.key === selectedTask ? 'active' : ''}" data-task="${cat.key}" data-index="${i}">
-            <span class="task-dial-icon">${cat.icon}</span>
-            <span class="task-dial-name">${getTaskLabel(cat.key)}</span>
-        </div>
-    `).join('');
+    const slotItemsHTML = TASK_CATEGORIES.map(cat =>
+        `<div class="slot-item" data-task="${cat.key}"><span class="slot-item-icon">${cat.icon}</span> ${getTaskLabel(cat.key)}</div>`
+    ).join('');
 
     appEl.innerHTML = `
         <div class="page">
             <div class="page-header">
                 <div class="mascot-container" id="mascot-slot"></div>
-                <h1 class="page-title">${t('selectTask')}</h1>
+                <h1 class="page-title slot-title">
+                    <span class="slot-prefix">${t('readyToPrefix')}</span>
+                    <span class="slot-machine" id="slot-window">
+                        <span class="slot-viewport">
+                            <span class="slot-reel" id="slot-reel">
+                                ${slotItemsHTML}
+                            </span>
+                        </span>
+                    </span><span class="slot-suffix">${t('readyToSuffix')}</span>
+                </h1>
                 <p class="page-subtitle">${t('hubiWaiting')}</p>
-            </div>
-
-            <div class="task-dial-container">
-                <div class="task-dial" id="task-dial">
-                    <div class="task-dial-track" id="task-dial-track">
-                        ${dialItemsHTML}
-                    </div>
-                </div>
-                <div class="task-dial-indicator"></div>
             </div>
 
             <div class="timer-display">
@@ -339,61 +336,90 @@ function renderIdlePage() {
     `;
 
     document.getElementById('btn-start').addEventListener('click', startWork);
-    initTaskDial();
+    initSlotDial();
 }
 
-function initTaskDial() {
-    const dial = document.getElementById('task-dial');
-    const track = document.getElementById('task-dial-track');
-    if (!dial || !track) return;
+function initSlotDial() {
+    const reel = document.getElementById('slot-reel');
+    const slotWindow = document.getElementById('slot-window');
+    if (!reel || !slotWindow) return;
 
-    const items = track.querySelectorAll('.task-dial-item');
-    const itemWidth = 88; // matches CSS min-width + gap
+    const items = reel.querySelectorAll('.slot-item');
+    if (items.length === 0) return;
 
-    // Scroll to selected task
+    const ITEM_H = 36; // matches CSS .slot-item height
     const selectedIndex = TASK_CATEGORIES.findIndex(c => c.key === selectedTask);
-    const targetScroll = selectedIndex * itemWidth;
+    let currentIndex = selectedIndex;
 
-    // Initial spin animation: scroll to end, then back to selected
-    const totalScroll = track.scrollWidth - dial.clientWidth;
-    dial.scrollLeft = totalScroll; // start at end
+    function reelOffset(idx) {
+        // Center the item in the 3-row viewport (offset by 1 row)
+        return idx * ITEM_H;
+    }
+
+    // Initial spin: start from last item, animate to selected
+    reel.style.transition = 'none';
+    reel.style.transform = `translateY(-${reelOffset(items.length - 1)}px)`;
+
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-            dial.scrollTo({ left: targetScroll, behavior: 'smooth' });
+            reel.style.transition = 'transform 1.2s cubic-bezier(0.23, 1, 0.32, 1)';
+            reel.style.transform = `translateY(-${reelOffset(selectedIndex)}px)`;
         });
     });
 
-    // Update selection on scroll end
-    let scrollTimer = null;
-    dial.addEventListener('scroll', () => {
-        clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(() => {
-            const center = dial.scrollLeft + dial.clientWidth / 2;
-            let closest = 0;
-            let closestDist = Infinity;
-            items.forEach((item, i) => {
-                const itemCenter = item.offsetLeft + item.offsetWidth / 2;
-                const dist = Math.abs(center - itemCenter);
-                if (dist < closestDist) {
-                    closestDist = dist;
-                    closest = i;
-                }
-            });
-            selectedTask = TASK_CATEGORIES[closest].key;
-            items.forEach((item, i) => {
-                item.classList.toggle('active', i === closest);
-            });
-        }, 80);
+    function snapToIndex(idx) {
+        currentIndex = idx;
+        selectedTask = TASK_CATEGORIES[idx].key;
+        reel.style.transition = 'transform 0.4s cubic-bezier(0.23, 1, 0.32, 1)';
+        reel.style.transform = `translateY(-${reelOffset(idx)}px)`;
+        items.forEach((item, i) => item.classList.toggle('slot-item-active', i === idx));
+    }
+
+    // Mark initial active
+    items.forEach((item, i) => item.classList.toggle('slot-item-active', i === selectedIndex));
+
+    // Touch drag
+    let startY = 0;
+    let isDragging = false;
+
+    slotWindow.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        isDragging = true;
+        reel.style.transition = 'none';
+    }, { passive: true });
+
+    slotWindow.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const dy = e.touches[0].clientY - startY;
+        const offset = reelOffset(currentIndex) - dy;
+        reel.style.transform = `translateY(-${offset}px)`;
+    }, { passive: true });
+
+    slotWindow.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const dy = e.changedTouches[0].clientY - startY;
+        const shift = Math.round(-dy / ITEM_H);
+        const newIdx = Math.max(0, Math.min(items.length - 1, currentIndex + shift));
+        snapToIndex(newIdx);
     });
 
-    // Click to select
-    items.forEach((item) => {
-        item.addEventListener('click', () => {
-            const task = item.dataset.task;
-            selectedTask = task;
-            items.forEach(it => it.classList.toggle('active', it.dataset.task === task));
-            dial.scrollTo({ left: item.offsetLeft - (dial.clientWidth - item.offsetWidth) / 2, behavior: 'smooth' });
-        });
+    // Mouse wheel -- debounced so trackpad doesn't fire too fast
+    let wheelLocked = false;
+    slotWindow.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (wheelLocked) return;
+        wheelLocked = true;
+        setTimeout(() => { wheelLocked = false; }, 200);
+
+        const direction = e.deltaY > 0 ? 1 : -1;
+        const newIdx = Math.max(0, Math.min(items.length - 1, currentIndex + direction));
+        snapToIndex(newIdx);
+    }, { passive: false });
+
+    // Click to cycle
+    slotWindow.addEventListener('click', () => {
+        snapToIndex((currentIndex + 1) % items.length);
     });
 }
 
@@ -403,8 +429,8 @@ function renderActivePage() {
     const taskIcon = getTaskIcon(taskKey);
     const statusEmoji = isBreak ? '💤' : taskIcon;
     const statusClass = isBreak ? 'on-break' : 'working';
-    const statusText = isBreak ? t('takingBreak') : `${taskIcon} ${getTaskLabel(taskKey)}`;
-    const subtitleText = isBreak ? t('hubiNapping') : t('hubiBusy');
+    const statusText = isBreak ? t('takingBreak') : t('hubiBusy');
+    const subtitleText = isBreak ? t('hubiNapping') : '';
 
     appEl.innerHTML = `
         <div class="page">
@@ -413,11 +439,11 @@ function renderActivePage() {
                     <span class="mascot-status">${statusEmoji}</span>
                 </div>
                 <h1 class="page-title">${statusText}</h1>
-                <p class="page-subtitle">${subtitleText}</p>
+                ${subtitleText ? `<p class="page-subtitle">${subtitleText}</p>` : ''}
             </div>
 
             <div class="timer-display ${statusClass}">
-                <div class="timer-label ${statusClass}">${isBreak ? t('breakTime') : t('workTime')}</div>
+                <div class="timer-label ${statusClass}">${isBreak ? t('breakTime') : getTaskLabel(taskKey)}</div>
                 <div class="timer-time" id="timer-display">00:00:00</div>
                 <div class="timer-date">${t('startedAt')} ${formatTime(activeSession.startTime)}</div>
                 <div class="timer-breakdown">

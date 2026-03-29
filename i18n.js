@@ -12,6 +12,8 @@ const I18n = (() => {
 
             // Timer - idle
             readyToWork: 'Ready to work?',
+            readyToPrefix: 'Ready to',
+            readyToSuffix: '?',
             hubiWaiting: 'Hubi is waiting for you!',
             elapsedTime: 'Elapsed Time',
             startWorking: 'Start Working',
@@ -181,6 +183,8 @@ const I18n = (() => {
 
             // Timer - idle
             readyToWork: 'Bereit zu arbeiten?',
+            readyToPrefix: 'Bereit zu',
+            readyToSuffix: '?',
             hubiWaiting: 'Hubi wartet auf dich!',
             elapsedTime: 'Vergangene Zeit',
             startWorking: 'Arbeit starten',

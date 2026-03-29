@@ -234,78 +234,71 @@ body::before {
     opacity: 0.7;
 }
 
-/* --- Task Dial --- */
-.task-dial-container {
-    position: relative;
-    margin: 12px 0 4px;
-}
-
-.task-dial {
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 8px 0;
-}
-
-.task-dial::-webkit-scrollbar {
-    display: none;
-}
-
-.task-dial-track {
+/* --- Slot Machine Dial --- */
+.slot-title {
     display: flex;
-    gap: 8px;
-    padding: 0 calc(50% - 40px);
-    width: max-content;
-}
-
-.task-dial-item {
-    scroll-snap-align: center;
-    min-width: 80px;
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 10px 8px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: transform 0.2s var(--transition-bounce), opacity 0.2s ease, background 0.2s ease;
-    opacity: 0.5;
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-.task-dial-item.active {
-    transform: scale(1.15);
-    opacity: 1;
-    background: var(--white);
-    box-shadow: var(--shadow-soft);
-}
-
-.task-dial-icon {
-    font-size: 1.6rem;
+    justify-content: center;
+    gap: 0;
     line-height: 1;
 }
 
-.task-dial-name {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--chocolate);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+.slot-prefix, .slot-suffix {
     white-space: nowrap;
 }
 
-.task-dial-indicator {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--orange-primary);
+.slot-machine {
+    position: relative;
+    display: inline-block;
+    height: 108px; /* 3 rows of 36px */
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    vertical-align: middle;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 33%, black 66%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 33%, black 66%, transparent 100%);
 }
+
+.slot-viewport {
+    display: block;
+    height: 100%;
+    overflow: hidden;
+    padding-top: 36px; /* offset so index 0 sits in the middle row */
+}
+
+.slot-reel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slot-item {
+    display: block;
+    height: 36px;
+    line-height: 36px;
+    white-space: nowrap;
+    font-size: inherit;
+    font-weight: 900;
+    color: var(--brown-warm);
+    opacity: 0.3;
+    transition: opacity 0.3s ease, color 0.3s ease;
+    padding: 0 6px;
+    text-align: center;
+}
+
+.slot-item-active {
+    color: var(--orange-primary);
+    opacity: 1;
+}
+
+.slot-item-icon {
+    margin-right: 2px;
+    font-style: normal;
+}
+
+/* Fades handled by mask-image on .slot-machine */
 
 /* --- Timer Display --- */
 .timer-display {
