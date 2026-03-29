@@ -1,7 +1,6 @@
 name = "hubi-sync"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
-account_id = "REDACTED"
 
 [[kv_namespaces]]
 binding = "SYNC_KV"
