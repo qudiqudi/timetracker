@@ -21,7 +21,7 @@ const I18n = (() => {
             takingBreak: 'Taking a break...',
             hubiBusy: 'Hubi is busy! 🐱',
             hubiNapping: 'Hubi is napping 😴',
-            workTime: 'Work Time',
+            workTime: 'Active Time',
             breakTime: 'Break Time',
             startedAt: 'Started at',
             totalWork: 'Time Tracked',
@@ -38,7 +38,7 @@ const I18n = (() => {
 
             // Session summary
             greatWork: 'Well done!',
-            work: 'Work',
+            work: 'Active',
             breaks: 'Breaks',
             total: 'Total',
             pawsome: 'Pawsome!',
@@ -66,7 +66,7 @@ const I18n = (() => {
 
             // Stats
             statistics: 'Statistics',
-            howProductivity: "How's your productivity?",
+            howProductivity: "How's it going?",
             week: 'Week',
             month: 'Month',
             allTime: 'All Time',
@@ -86,7 +86,7 @@ const I18n = (() => {
             insightWeek20: (h) => `${h}h this week. Nice pace! Hubi is purring with pride! 😺`,
             insightWeekLow: (h) => `${h}h this week. Keep it up! Hubi believes in you! 💪🐱`,
             insightMonth160: (h) => `${h}h this month! That's a full-time cat! 😹`,
-            insightMonth80: (h) => `${h}h this month — productive kitty! 🐱✨`,
+            insightMonth80: (h) => `${h}h this month — busy kitty! 🐱✨`,
             insightMonthLow: (h) => `${h}h this month. Hubi is tracking with you! 📋🐾`,
             insightAll: (h, d) => `${h} total hours tracked across ${d} days! Hubi is proud! 🏆🐱`,
 
@@ -189,7 +189,7 @@ const I18n = (() => {
             takingBreak: 'Pause machen...',
             hubiBusy: 'Hubi ist beschäftigt! 🐱',
             hubiNapping: 'Hubi macht ein Nickerchen 😴',
-            workTime: 'Arbeitszeit',
+            workTime: 'Aktive Zeit',
             breakTime: 'Pausenzeit',
             startedAt: 'Gestartet um',
             totalWork: 'Erfasste Zeit',
@@ -206,7 +206,7 @@ const I18n = (() => {
 
             // Session summary
             greatWork: 'Gut gemacht!',
-            work: 'Arbeit',
+            work: 'Aktiv',
             breaks: 'Pausen',
             total: 'Gesamt',
             pawsome: 'Pfotastisch!',
@@ -234,7 +234,7 @@ const I18n = (() => {
 
             // Stats
             statistics: 'Statistik',
-            howProductivity: 'Wie läuft deine Produktivität?',
+            howProductivity: "Wie läuft's?",
             week: 'Woche',
             month: 'Monat',
             allTime: 'Gesamt',
@@ -254,7 +254,7 @@ const I18n = (() => {
             insightWeek20: (h) => `${h}h diese Woche. Gutes Tempo! Hubi schnurrt vor Stolz! 😺`,
             insightWeekLow: (h) => `${h}h diese Woche. Weiter so! Hubi glaubt an dich! 💪🐱`,
             insightMonth160: (h) => `${h}h diesen Monat! Das ist eine Vollzeit-Katze! 😹`,
-            insightMonth80: (h) => `${h}h diesen Monat — produktives Kätzchen! 🐱✨`,
+            insightMonth80: (h) => `${h}h diesen Monat — fleißiges Kätzchen! 🐱✨`,
             insightMonthLow: (h) => `${h}h diesen Monat. Hubi trackt mit dir! 📋🐾`,
             insightAll: (h, d) => `${h} Stunden insgesamt an ${d} Tagen erfasst! Hubi ist stolz! 🏆🐱`,
 
