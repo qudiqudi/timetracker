@@ -23,7 +23,7 @@ async function hashIP(ip, date) {
 	return [...new Uint8Array(hash)].slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function trackBeacon(env, request) {
+async function trackBeacon(env, request, rawBody) {
 	const date = new Date().toISOString().slice(0, 10);
 	const key = `_b:${date}`;
 	const b = await env.SYNC_KV.get(key, 'json') || { views: 0, visitors: [], pages: {} };
@@ -37,8 +37,7 @@ async function trackBeacon(env, request) {
 
 	// Count page views by tab
 	try {
-		const text = await request.text();
-		const body = JSON.parse(text);
+		const body = JSON.parse(rawBody);
 		if (body.page && typeof body.page === 'string') {
 			const page = body.page.slice(0, 20);
 			b.pages[page] = (b.pages[page] || 0) + 1;
@@ -339,7 +338,8 @@ export default {
 
 		// Page view beacon
 		if (url.pathname === '/beacon' && request.method === 'POST') {
-			ctx.waitUntil(trackBeacon(env, request));
+			const body = await request.text();
+			ctx.waitUntil(trackBeacon(env, request, body));
 			return new Response(null, { status: 204, headers });
 		}
 
