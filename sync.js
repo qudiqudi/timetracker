@@ -338,7 +338,7 @@ const CloudSync = {
 
     initialSync() {
         if (!this.isPaired()) return;
-        this.sync();
+        return this.sync();
     },
 
     schedulePush() {
@@ -596,7 +596,7 @@ function attachCloudSyncListeners(appEl) {
         document.getElementById('cloud-generate')?.addEventListener('click', async () => {
             const phrase = generatePhrase();
             CloudSync.setPhrase(phrase);
-            CloudSync.initialSync();
+            await CloudSync.initialSync();
             showToast(t('cloudSyncStarted'));
             renderSyncPage(appEl);
         });
@@ -609,7 +609,7 @@ function attachCloudSyncListeners(appEl) {
                 return;
             }
             CloudSync.setPhrase(phrase);
-            CloudSync.initialSync();
+            await CloudSync.initialSync();
             showToast(t('cloudSyncStarted'));
             renderSyncPage(appEl);
         });
