@@ -336,7 +336,7 @@ const CloudSync = {
         }
     },
 
-    startAutoSync() {
+    initialSync() {
         if (!this.isPaired()) return;
         this.sync();
     },
@@ -596,7 +596,7 @@ function attachCloudSyncListeners(appEl) {
         document.getElementById('cloud-generate')?.addEventListener('click', async () => {
             const phrase = generatePhrase();
             CloudSync.setPhrase(phrase);
-            CloudSync.startAutoSync();
+            CloudSync.initialSync();
             showToast(t('cloudSyncStarted'));
             renderSyncPage(appEl);
         });
@@ -609,7 +609,7 @@ function attachCloudSyncListeners(appEl) {
                 return;
             }
             CloudSync.setPhrase(phrase);
-            CloudSync.startAutoSync();
+            CloudSync.initialSync();
             showToast(t('cloudSyncStarted'));
             renderSyncPage(appEl);
         });
@@ -879,17 +879,12 @@ function renderImportPage(appEl) {
     document.getElementById('import-back').addEventListener('click', () => renderSyncPage(appEl));
 }
 
-// Start auto-sync if previously paired
-CloudSync.startAutoSync();
+// Initial sync if previously paired
+CloudSync.initialSync();
 
-// Sync when app returns to foreground or tab gains focus
+// Sync when app returns to foreground (covers both tab switches and window focus)
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && CloudSync.isPaired()) {
-        CloudSync.sync();
-    }
-});
-window.addEventListener('focus', () => {
-    if (CloudSync.isPaired()) {
         CloudSync.sync();
     }
 });
