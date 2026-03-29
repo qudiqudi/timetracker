@@ -272,6 +272,50 @@ async function handleGrafana(request, env, url) {
 		return Response.json(result);
 	}
 
+	// GET /grafana/api?metrics=cf_requests,cf_bytes&from=2026-03-01&to=2026-03-29
+	// Returns flat JSON rows for Infinity datasource
+	if (request.method === 'GET' && url.pathname === '/grafana/api') {
+		const metrics = (url.searchParams.get('metrics') || '').split(',').filter(m => ALL_METRICS.includes(m));
+		const fromDate = url.searchParams.get('from');
+		const toDate = url.searchParams.get('to');
+		if (!metrics.length || !fromDate || !toDate) {
+			return Response.json({ error: 'Required params: metrics, from, to' }, { status: 400 });
+		}
+
+		const from = new Date(fromDate + 'T00:00:00Z');
+		const to = new Date(toDate + 'T23:59:59Z');
+		const dates = daysBetween(from, to);
+
+		const wantsCf = metrics.some(m => m.startsWith('cf_'));
+		const wantsKv = metrics.some(m => KV_METRICS.includes(m));
+		const wantsBeacon = metrics.some(m => m.startsWith('page_') || m === 'unique_visitors');
+
+		const [kvEntries, beaconEntries, cfData] = await Promise.all([
+			wantsKv ? Promise.all(dates.map(async date => {
+				const data = await env.SYNC_KV.get(`_m:${date}`, 'json');
+				return { date, data: data || { get: 0, put: 0, hit: 0, miss: 0, err: 0, bytes: 0, ch: [] } };
+			})) : Promise.resolve(null),
+			wantsBeacon ? Promise.all(dates.map(async date => {
+				const data = await env.SYNC_KV.get(`_b:${date}`, 'json');
+				return { date, data: data || { views: 0, visitors: [], pages: {} } };
+			})) : Promise.resolve(null),
+			wantsCf ? fetchCfAnalytics(env, fromDate, toDate) : Promise.resolve(null),
+		]);
+
+		const cfEmpty = { requests: 0, bytes: 0, threats: 0, status_2xx: 0, status_4xx: 0, status_5xx: 0 };
+		const rows = dates.map((date, i) => {
+			const row = { date };
+			for (const m of metrics) {
+				if (CF_EXTRACTORS[m]) row[m] = CF_EXTRACTORS[m](cfData?.[date] || cfEmpty) ?? 0;
+				else if (BEACON_EXTRACTORS[m]) row[m] = BEACON_EXTRACTORS[m](beaconEntries?.[i]?.data || { views: 0, visitors: [], pages: {} });
+				else if (KV_EXTRACTORS[m]) row[m] = KV_EXTRACTORS[m](kvEntries?.[i]?.data || { get: 0, put: 0, hit: 0, miss: 0, err: 0, bytes: 0, ch: [] });
+			}
+			return row;
+		});
+
+		return Response.json(rows);
+	}
+
 	return new Response('Not found', { status: 404 });
 }
 
