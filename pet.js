@@ -254,6 +254,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // Otherwise stay sitting — wait for setTaskPreview() or startCycle()
         }
 
+        // Re-center in the mascot slot (called after page re-render)
+        repositionInSlot() {
+            if (!this.inMascotSlot) return;
+            const slot = document.getElementById('mascot-slot');
+            if (!slot) return;
+            const rect = slot.getBoundingClientRect();
+            const scrollY = this.isNarrow() ? window.scrollY : 0;
+            this.x = rect.left + rect.width / 2 - 30;
+            this.y = rect.top + scrollY;
+            this.container.style.transform = `translate(${this.x}px, ${this.y}px)`;
+        }
+
         // Called by the slot reel when the selected task changes.
         // Smoothly transitions Hubi's pose to preview the task animation
         // while she remains in the mascot slot.

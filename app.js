@@ -250,6 +250,16 @@ function navigateTo(page) {
     navBtns.forEach(b => b.classList.toggle('active', b.dataset.page === page));
     sendBeacon(page);
     renderPage();
+
+    // Hide/show cat when navigating while she's still in the mascot slot
+    if (window.hubiPet && window.hubiPet.inMascotSlot) {
+        if (page === 'timer') {
+            window.hubiPet.container.style.display = '';
+            window.hubiPet.repositionInSlot();
+        } else {
+            window.hubiPet.container.style.display = 'none';
+        }
+    }
 }
 
 let currentWatchPicker = null;
