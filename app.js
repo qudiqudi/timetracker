@@ -2,9 +2,55 @@
    HUBI TIME TRACKER — App Logic
    ============================================ */
 
-// ---- Service Worker Registration ----
+// ---- Service Worker Registration + Auto-Update ----
+// PWAs (especially on Android) often stay open for days. Even though the
+// service worker calls skipWaiting/clients.claim to activate new versions
+// immediately, the running tab keeps executing the JS it loaded at startup
+// — so users sit on stale code until they hard-refresh. The block below
+// detects when a new SW takes over (controllerchange) and reloads, deferring
+// to the next visibility=hidden moment so the user never sees a flash.
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    // Track whether we had a controller at page load. If not, the first
+    // controllerchange is just the initial registration and we must NOT reload.
+    const hadInitialController = !!navigator.serviceWorker.controller;
+    let pendingReload = false;
+    let reloading = false;
+
+    function scheduleReload() {
+        if (reloading) return;
+        // If the page is already hidden, reload right away — user won't see
+        // anything. Otherwise wait for them to look away.
+        if (document.visibilityState === 'hidden') {
+            reloading = true;
+            window.location.reload();
+        } else {
+            pendingReload = true;
+        }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (pendingReload && document.visibilityState === 'hidden' && !reloading) {
+            reloading = true;
+            window.location.reload();
+        }
+        // When the user returns to the app, ask the SW to check for a new
+        // version. Catches the "PWA open for days" case.
+        if (document.visibilityState === 'visible') {
+            navigator.serviceWorker.getRegistration().then(reg => {
+                if (reg) reg.update().catch(() => {});
+            });
+        }
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadInitialController) return; // first install — nothing to reload
+        scheduleReload();
+    });
+
+    navigator.serviceWorker.register('sw.js').then(reg => {
+        // Periodic background check (hourly) for long-lived PWA sessions.
+        setInterval(() => { reg.update().catch(() => {}); }, 60 * 60 * 1000);
+    }).catch(() => {});
 }
 
 // ---- Storage Helper ----
