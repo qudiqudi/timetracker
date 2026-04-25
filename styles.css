@@ -1565,9 +1565,26 @@ body::before {
     position: fixed;
     top: 0;
     left: 0;
+    /* Behind the app card (z:1) so she never paints on top of UI elements.
+       Safe-zone logic keeps her around the card, not over it. The speech
+       bubble lives in its own body-level layer (#hubi-speech) so it can
+       still appear in front of the UI without dragging the cat with it. */
     z-index: 0;
     pointer-events: none;
     cursor: pointer;
+    will-change: transform;
+}
+
+/* Speech bubble — lifted out of the cat container into its own layer
+   so it can render above the app card while the cat stays behind it.
+   Width/height are set in JS to match the sprite's actual rendered rect. */
+#hubi-speech {
+    position: fixed;
+    top: 0;
+    left: 0;
+    /* Above app card (1) and below bottom-nav (100). */
+    z-index: 60;
+    pointer-events: none;
     will-change: transform;
 }
 
@@ -1676,6 +1693,91 @@ body::before {
 .prop-heart {
     color: #ff4466;
     font-size: 1.2rem;
+}
+
+/* --- SPEECH BUBBLE (motivational messages) --- */
+.speech-bubble {
+    position: absolute;
+    left: 30px;
+    bottom: 60px;
+    width: max-content;
+    max-width: 220px;
+    padding: 8px 12px;
+    background: var(--cream, #FFF5E6);
+    color: var(--chocolate, #3D2914);
+    border: 2px solid var(--orange-primary, #FF8C42);
+    border-radius: 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+    box-shadow: 0 4px 12px rgba(61, 41, 20, 0.18);
+    opacity: 0;
+    transform: translateY(6px) scale(0.85);
+    transform-origin: bottom left;
+    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: none;
+    z-index: 5;
+}
+
+.speech-bubble.left {
+    left: auto;
+    right: 30px;
+    transform-origin: bottom right;
+}
+
+/* Vertical flip: bubble appears below the head when there's no room above */
+.speech-bubble.below {
+    bottom: auto;
+    top: 60px;
+    transform-origin: top left;
+}
+.speech-bubble.below.left {
+    transform-origin: top right;
+}
+
+/* Tail of the speech bubble — small triangle pointing down toward Hubi's head */
+.speech-bubble::before,
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 14px;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 8px solid var(--orange-primary, #FF8C42);
+}
+.speech-bubble::after {
+    bottom: -5px;
+    border-top-color: var(--cream, #FFF5E6);
+}
+.speech-bubble.left::before,
+.speech-bubble.left::after {
+    left: auto;
+    right: 14px;
+}
+
+/* Below-flip: tail flips to the top edge and points up at the head */
+.speech-bubble.below::before,
+.speech-bubble.below::after {
+    bottom: auto;
+    top: -8px;
+    border-top: none;
+    border-bottom: 8px solid var(--orange-primary, #FF8C42);
+}
+.speech-bubble.below::after {
+    top: -5px;
+    border-bottom-color: var(--cream, #FFF5E6);
+}
+
+.speech-bubble.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
 }
 
 /* --- NEW PET PROPS --- */

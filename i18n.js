@@ -91,9 +91,7 @@ const I18n = (() => {
             insightAll: (h, d) => `${h} total hours tracked across ${d} days! Hubi is proud! 🏆🐱`,
 
             // Toasts
-            toastStartWork: "🐾 Let's go!",
             toastBreak: '☕ Break time! Hubi is napping...',
-            toastResume: '🐾 Back at it!',
             toastTreat: '🎉 4 hours done! Hubi earned a treat — click the box!',
 
             // Sync
@@ -172,6 +170,8 @@ const I18n = (() => {
             whatsNewEditEntryDesc: "You can now edit the start and end times of your tracking sessions directly from the history tab. Mistakes happen, and Hubi understands!",
             whatsNewSafetyNetTitle: "Safety net for your history",
             whatsNewSafetyNetDesc: "Hubi now keeps a 7-day local backup, lets you undo deletes, and warns before pairing. If sessions ever go missing, head to Sync to recover.",
+            whatsNewBubblesTitle: "Hubi has things to say",
+            whatsNewBubblesDesc: "Hubi now drops in with little speech bubbles — start a session, hit a milestone, finish your daily goal. She picks her moments and quiets down between them.",
 
             // Recovery & safety
             undo: 'Undo',
@@ -202,6 +202,53 @@ const I18n = (() => {
             saveBlocked: 'Save blocked — please reload',
             shrinkWarning: 'Some sessions look missing — open Sync to recover',
             syncSafetyAbort: 'Sync looked wrong — no changes saved',
+
+            // Hubi speech-bubble messages
+            msgMondayMorning: 'New week, fresh paws!',
+            msgWednesdayHump: 'Hump day! Halfway through the week.',
+            msgThursdayAlmost: 'Thursday — almost weekend!',
+            msgFridayMorning: 'Friday energy! 🐾',
+            msgFridayAfternoon: 'Final hours before the weekend!',
+            msgWeekendChill: 'Even cats rest on weekends.',
+            msgEarlyBird: 'Early bird? Me too. ☕',
+            msgGoodMorning: 'Good morning! Ready?',
+            msgLunchTime: 'Have you eaten yet?',
+            msgEveningWindDown: "Still at it tonight — don't skip your rest.",
+            msgLateNight: "It's late. Time to sleep soon.",
+            msgDaily25: 'First quarter done. Keep going!',
+            msgDaily50: 'Halfway there! 🐾',
+            msgDaily75: (left) => `Only ${left} to go today.`,
+            msgDaily90: 'Final stretch! Almost there.',
+            msgDailyDone: "Daily goal reached — you're amazing!",
+            msgDailyOvertime: "Extra mile today, huh? Take care of yourself.",
+            msgSession1h: 'One hour straight — nice!',
+            msgSession2h: 'Two hours! Time to stretch? 🧘',
+            msgSession3h: 'Three hours without a break — take one!',
+            msgStartCheers: ["Let's go! 🐾", 'I believe in you!', 'Paws up!', 'Focused like a cat on the hunt.'],
+            msgResumeCheers: ['Refreshed? Back to it!', 'Back in the game!', 'I just blinked, I swear. 😺'],
+            msgWelcomeBack: 'There you are!',
+            msgPurrfect: 'Purrfect!',
+            msgRooting: "I'm rooting for you!",
+            msgYouGotThis: 'You got this!',
+            msgIdleNudge: 'Up for a session?',
+            msgFinishGoal: 'You hit your goal today! Proud of you. 😻',
+            msgTaskArbeiten: [
+                'Focused work mode. 💻',
+                'Deep work — I\'ll guard the snacks. 🐱',
+                'Inbox zero or bust!',
+                "Let's ship something today.",
+                'Heads down, tails up.',
+                'One task at a time. You got this. 🐾',
+                'Notifications can wait.',
+                'Make today count!'
+            ],
+            msgTaskLernen: ['Brain mode on! 📚', 'Stay curious! 🧠', "Knowledge is power — and treats."],
+            msgTaskPutzen: ['Sparkle, sparkle! ✨', 'A clean home, a happy cat. 🧹', 'Fresh start! 🫧'],
+            msgTaskEntspannen: ['You deserve this. 😌', 'Pure relax mode. 🛋️', 'Cats approve of naps.'],
+            msgTaskKochen: ['Smells good already! 🍳', 'Make it tasty! 😋', 'Save me a bite? 🐟'],
+            msgTaskSport: ["Let's move! 💪", 'Get those steps in! 🏃', 'Stronger every day.'],
+            msgTaskKreativ: ['Make something cool! 🎨', 'Let it flow. 🖌️', 'Creativity unleashed!'],
+            msgTaskEinkaufen: ['Grab the essentials! 🛒', "Don't forget the catnip. 😺", 'Quick run — easy peasy!'],
         },
 
         de: {
@@ -291,9 +338,7 @@ const I18n = (() => {
             insightAll: (h, d) => `${h} Stunden insgesamt an ${d} Tagen erfasst! Hubi ist stolz! 🏆🐱`,
 
             // Toasts
-            toastStartWork: '🐾 Auf geht\'s!',
             toastBreak: '☕ Pausenzeit! Hubi macht ein Nickerchen...',
-            toastResume: '🐾 Weiter geht\'s!',
             toastTreat: '🎉 4 Stunden geschafft! Hubi hat sich ein Leckerli verdient — klick auf die Box!',
 
             // Sync
@@ -372,6 +417,8 @@ const I18n = (() => {
             whatsNewEditEntryDesc: "Du kannst jetzt die Start- und Endzeiten deiner erfassten Sitzungen direkt im Verlauf bearbeiten. Fehler passieren, und Hubi versteht das!",
             whatsNewSafetyNetTitle: "Sicherheitsnetz für deinen Verlauf",
             whatsNewSafetyNetDesc: "Hubi behält jetzt eine 7-Tage-Sicherung lokal, du kannst Löschungen rückgängig machen, und vor dem Verbinden gibt's eine Vorschau. Falls Sitzungen verschwinden, kannst du sie unter Sync wiederherstellen.",
+            whatsNewBubblesTitle: "Hubi hat was zu sagen",
+            whatsNewBubblesDesc: "Hubi meldet sich jetzt mit kleinen Sprechblasen — beim Start einer Sitzung, bei Meilensteinen, beim Erreichen deines Tagesziels. Sie wählt ihre Momente und ist dazwischen ruhig.",
 
             // Recovery & safety
             undo: 'Rückgängig',
@@ -402,6 +449,53 @@ const I18n = (() => {
             saveBlocked: 'Speichern blockiert — bitte neu laden',
             shrinkWarning: 'Es scheinen Sitzungen zu fehlen — unter Sync wiederherstellbar',
             syncSafetyAbort: 'Sync sah falsch aus — keine Änderungen gespeichert',
+
+            // Hubi Sprechblasen-Nachrichten
+            msgMondayMorning: 'Neue Woche, neue Pfotenabdrücke!',
+            msgWednesdayHump: 'Bergfest! Halbe Woche geschafft.',
+            msgThursdayAlmost: 'Donnerstag — fast Wochenende!',
+            msgFridayMorning: 'Freitag-Energie! 🐾',
+            msgFridayAfternoon: 'Letzte Stunden bis zum Wochenende!',
+            msgWeekendChill: 'Auch Katzen ruhen am Wochenende.',
+            msgEarlyBird: 'Früher Vogel? Ich bin auch wach. ☕',
+            msgGoodMorning: 'Guten Morgen! Bereit?',
+            msgLunchTime: 'Schon was gegessen?',
+            msgEveningWindDown: 'Abends noch fleißig — vergiss die Pause nicht.',
+            msgLateNight: 'Es ist spät. Zeit fürs Bett bald.',
+            msgDaily25: 'Erstes Viertel geschafft. Weiter so!',
+            msgDaily50: 'Halbzeit! 🐾',
+            msgDaily75: (left) => `Nur noch ${left} bis zum Tagesziel.`,
+            msgDaily90: 'Endspurt! Fast geschafft.',
+            msgDailyDone: 'Tagesziel erreicht — du bist großartig!',
+            msgDailyOvertime: 'Heute Extra-Meilen, hm? Pass auf dich auf.',
+            msgSession1h: 'Eine Stunde am Stück — gut gemacht!',
+            msgSession2h: 'Zwei Stunden! Zeit zum Strecken? 🧘',
+            msgSession3h: 'Drei Stunden ohne Pause — gönn dir eine!',
+            msgStartCheers: ['Los geht\'s! 🐾', 'Ich glaub an dich!', 'Pfoten hoch!', 'Konzentriert wie eine Katze auf der Jagd.'],
+            msgResumeCheers: ['Frisch erholt? Weiter!', 'Zurück im Spiel!', 'Ich war auch nur kurz weg. 😺'],
+            msgWelcomeBack: 'Da bist du ja wieder!',
+            msgPurrfect: 'Pfotastisch!',
+            msgRooting: 'Ich drück dir die Pfoten!',
+            msgYouGotThis: 'Du schaffst das!',
+            msgIdleNudge: 'Lust auf eine Session?',
+            msgFinishGoal: 'Tagesziel erreicht! Stolz auf dich. 😻',
+            msgTaskArbeiten: [
+                'Fokus-Modus an. 💻',
+                'Tiefes Arbeiten — ich passe auf die Snacks auf. 🐱',
+                'Posteingang leer oder gar nicht!',
+                'Lass uns heute was rausbringen.',
+                'Kopf runter, Schwanz hoch.',
+                'Eine Aufgabe nach der anderen. Du schaffst das! 🐾',
+                'Benachrichtigungen können warten.',
+                'Mach den Tag zu deinem!'
+            ],
+            msgTaskLernen: ['Hirn aktiviert! 📚', 'Bleib neugierig! 🧠', 'Wissen ist Macht — und Leckerlis.'],
+            msgTaskPutzen: ['Glitzer, glitzer! ✨', 'Sauberes Zuhause, glückliche Katze. 🧹', 'Frischer Start! 🫧'],
+            msgTaskEntspannen: ['Du hast es dir verdient. 😌', 'Pure Entspannung. 🛋️', 'Katzen befürworten Nickerchen.'],
+            msgTaskKochen: ['Riecht schon lecker! 🍳', 'Mach es lecker! 😋', 'Einen Bissen für mich? 🐟'],
+            msgTaskSport: ['Bewegung! 💪', 'Hol dir die Schritte! 🏃', 'Jeden Tag stärker.'],
+            msgTaskKreativ: ['Mach was Cooles! 🎨', 'Lass es fließen. 🖌️', 'Kreativität entfesselt!'],
+            msgTaskEinkaufen: ['Hol das Wichtigste! 🛒', 'Vergiss das Katzenminze nicht. 😺', 'Schneller Run — kein Problem!'],
         }
     };
 

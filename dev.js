@@ -12,6 +12,8 @@
             <div class="dev-btn-grid"></div>
             <div class="dev-section">Treat</div>
             <div class="dev-treat-btns"></div>
+            <div class="dev-section">Speech</div>
+            <div class="dev-speech-btns"></div>
         </div>
     `;
 
@@ -168,5 +170,37 @@
             localStorage.removeItem('hubi_treat_date');
         });
         treatBtns.appendChild(resetBtn);
+
+        // ---- Speech bubble dev controls ----
+        // Each "Say" button clears all cooldowns first so you can spam-test
+        // without the message system filtering you out after the first click.
+        const speechBtns = document.querySelector('.dev-speech-btns');
+        const triggers = ['start', 'resume', 'visibility', 'navigate', 'tick', 'finish'];
+        triggers.forEach(trig => {
+            const b = document.createElement('button');
+            b.className = 'dev-btn';
+            b.textContent = `Say (${trig})`;
+            b.addEventListener('click', () => {
+                if (typeof HubiMessages === 'undefined') return;
+                localStorage.removeItem('hubi_msg_history');
+                localStorage.removeItem('hubi_msg_last_shown');
+                localStorage.removeItem('hubi_msg_session_shown');
+                const picked = HubiMessages.trigger(trig, { force: true });
+                if (!picked) {
+                    window.hubiPet.showSpeechBubble('(no eligible message)', 2500);
+                }
+            });
+            speechBtns.appendChild(b);
+        });
+
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'dev-btn';
+        clearBtn.textContent = 'Reset speech cooldowns';
+        clearBtn.addEventListener('click', () => {
+            localStorage.removeItem('hubi_msg_history');
+            localStorage.removeItem('hubi_msg_last_shown');
+            localStorage.removeItem('hubi_msg_session_shown');
+        });
+        speechBtns.appendChild(clearBtn);
     });
 })();

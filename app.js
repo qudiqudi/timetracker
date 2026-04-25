@@ -395,6 +395,16 @@ function navigateTo(page) {
             window.hubiPet.container.style.display = 'none';
         }
     }
+
+    // Always clear any active bubble when navigating — prevents stale messages
+    // from lingering when Hubi briefly disappears or the page context changes.
+    if (window.hubiPet && typeof window.hubiPet.hideSpeechBubble === 'function') {
+        window.hubiPet.hideSpeechBubble();
+    }
+
+    if (page === 'timer' && typeof HubiMessages !== 'undefined') {
+        setTimeout(() => HubiMessages.trigger('navigate'), 1200);
+    }
 }
 
 let currentWatchPicker = null;
@@ -699,10 +709,17 @@ function startWork() {
         task: selectedTask || 'arbeiten'
     };
     ActiveState.set(activeSession);
-    showToast(t('toastStartWork'));
 
     // Hubi jumps down from mascot slot and starts roaming
     if (window.hubiPet) window.hubiPet.startCycle();
+
+    // Reset per-session message memory and greet via speech bubble
+    // (no toast — Hubi speaks instead). force=true bypasses the global
+    // throttle since this is a deliberate user action.
+    if (typeof HubiMessages !== 'undefined') {
+        HubiMessages.clearSessionShown();
+        setTimeout(() => HubiMessages.trigger('start', { force: true }), 2500);
+    }
 
     renderActivePage();
 }
@@ -728,7 +745,12 @@ function resumeWork() {
     activeSession.currentBreakStart = null;
     activeSession.status = 'working';
     ActiveState.set(activeSession);
-    showToast(t('toastResume'));
+
+    // Hubi speaks via bubble — toast removed to avoid double-feedback
+    if (typeof HubiMessages !== 'undefined') {
+        setTimeout(() => HubiMessages.trigger('resume', { force: true }), 1500);
+    }
+
     renderActivePage();
 }
 
@@ -779,6 +801,13 @@ function finishWork() {
     ActiveState.clear();
     activeSession = null;
     clearInterval(timerInterval);
+
+    // Fire the finish trigger BEFORE clearing per-session memory so
+    // the daily-goal-reached message can use the just-completed session.
+    if (typeof HubiMessages !== 'undefined') {
+        HubiMessages.trigger('finish', { force: true });
+        HubiMessages.clearSessionShown();
+    }
 
     showSessionSummary(session);
 }
@@ -1751,11 +1780,12 @@ function showDialog(emoji, title, text, confirmLabel, cancelLabel, onConfirm) {
 }
 
 // ---- Changelog ----
-const CHANGELOG_VERSION = 3;
+const CHANGELOG_VERSION = 4;
 const CHANGELOG_ENTRIES = [
     { emoji: '☁️', titleKey: 'whatsNewCloudSyncTitle', descKey: 'whatsNewCloudSyncDesc' },
     { emoji: '✏️', titleKey: 'whatsNewEditEntryTitle', descKey: 'whatsNewEditEntryDesc' },
     { emoji: '🛟', titleKey: 'whatsNewSafetyNetTitle', descKey: 'whatsNewSafetyNetDesc' },
+    { emoji: '💬', titleKey: 'whatsNewBubblesTitle', descKey: 'whatsNewBubblesDesc' },
 ];
 
 function showChangelog() {
@@ -1804,6 +1834,41 @@ sendBeacon(currentPage);
 showChangelog();
 checkRecoveryBanner();
 Storage.snapshotToday();
+
+// ---- Hubi message triggers ----
+// Page-load greeting on the timer page (slight delay so the pet is mounted)
+setTimeout(() => {
+    if (typeof HubiMessages === 'undefined') return;
+    if (currentPage === 'timer') HubiMessages.trigger('navigate');
+}, 2200);
+
+// Returning to the tab after a gap → "welcome back" + maybe a milestone
+let lastHiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        lastHiddenAt = Date.now();
+        if (window.hubiPet && typeof window.hubiPet.hideSpeechBubble === 'function') {
+            window.hubiPet.hideSpeechBubble();
+        }
+        return;
+    }
+    if (typeof HubiMessages === 'undefined') return;
+    const awayMs = lastHiddenAt ? Date.now() - lastHiddenAt : 0;
+    // Only greet on real returns (away > 2 min) so quick tab switches don't trigger
+    if (awayMs > 2 * 60000) {
+        setTimeout(() => HubiMessages.trigger('visibility'), 800);
+    }
+});
+
+// Periodic milestone tick — checks every 2 min so session-length thresholds
+// (1h/2h/3h) are caught soon after they cross.
+setInterval(() => {
+    if (typeof HubiMessages === 'undefined') return;
+    if (document.hidden) return;
+    if (currentPage !== 'timer') return;
+    if (!ActiveState.get()) return;
+    HubiMessages.trigger('tick');
+}, 2 * 60000);
 
 // Auto-recovery: if local sessions look like they shrank dramatically since
 // yesterday's (or a recent) snapshot, prompt the user to restore. Snapshots

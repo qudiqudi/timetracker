@@ -81,6 +81,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(this.container);
             this.sprite = this.container.querySelector('#hubi-pet-sprite');
 
+            // Speech bubble lives in its own body-level layer so it can
+            // render in front of the UI while the cat stays behind it.
+            this.speechLayer = document.createElement('div');
+            this.speechLayer.id = 'hubi-speech';
+            this.speechLayer.innerHTML = `
+                <div class="speech-bubble" aria-hidden="true">
+                    <span class="speech-text"></span>
+                </div>
+            `;
+            document.body.appendChild(this.speechLayer);
+
             // Move glasses inside cat-head so they follow head animations naturally
             const glasses = this.container.querySelector('.prop-glasses');
             const head = this.sprite.querySelector('.cat-head');
@@ -426,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         getObstacles() {
             const obstacles = [];
-            const margin = 20;
+            const margin = 6;
             const scrollY = this.isNarrow() ? window.scrollY : 0;
 
             // The main content column — avoid entirely
@@ -484,7 +495,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const zoneRight = window.innerWidth - catSize - margin;
 
             const x = zoneLeft + Math.random() * Math.max(0, zoneRight - zoneLeft);
-            const y = zoneTop + Math.random() * Math.max(0, zoneBottom - zoneTop);
+            // Bias toward the top of the zone so she stays close to the app card
+            // (and visible without the user having to scroll further down).
+            const yRange = Math.max(0, zoneBottom - zoneTop);
+            const u = Math.random();
+            const biased = u * u; // squared → favors small values → top of zone
+            const y = zoneTop + biased * yRange;
             return { x, y };
         }
 
@@ -494,43 +510,74 @@ document.addEventListener('DOMContentLoaded', () => {
                 return this.findMobileTarget();
             }
 
-            const obstacles = this.getObstacles();
             const maxX = window.innerWidth - 80;
             const maxY = this.maxY();
             const catSize = 60;
 
-            // Build list of safe zones (left of content, right of content, below content)
+            // Build list of safe zones (left of content, right of content, below content).
+            // Smaller margin (6px) so side zones exist on narrower windows; biased
+            // toward the inner edge of each zone so Hubi roams CLOSE to the UI
+            // rather than wandering off into dead corners.
             const app = document.getElementById('app');
             const safeZones = [];
 
             if (app) {
                 const r = app.getBoundingClientRect();
-                const margin = 20;
+                const margin = 6;
+                const innerBias = 0.65; // 0..1, higher = closer to the app edge
 
-                // Left side of content
-                if (r.left - margin > catSize + 10) {
-                    safeZones.push({ xMin: 10, xMax: r.left - margin - catSize, yMin: 10, yMax: maxY });
+                // Left side of content (cat sits to the LEFT of the card)
+                if (r.left - margin > catSize + 5) {
+                    safeZones.push({
+                        xMin: 5, xMax: r.left - margin - catSize,
+                        yMin: Math.max(10, r.top), yMax: Math.min(maxY, r.bottom),
+                        innerEdge: 'right'
+                    });
                 }
-                // Right side of content
-                if (maxX - (r.right + margin) > catSize + 10) {
-                    safeZones.push({ xMin: r.right + margin, xMax: maxX, yMin: 10, yMax: maxY });
+                // Right side of content (cat sits to the RIGHT of the card)
+                if (maxX - (r.right + margin) > catSize + 5) {
+                    safeZones.push({
+                        xMin: r.right + margin, xMax: maxX,
+                        yMin: Math.max(10, r.top), yMax: Math.min(maxY, r.bottom),
+                        innerEdge: 'left'
+                    });
                 }
                 // Below content (above nav)
                 const contentBottom = r.bottom + margin;
-                if (maxY - contentBottom > catSize + 10) {
-                    safeZones.push({ xMin: 10, xMax: maxX, yMin: contentBottom, yMax: maxY });
+                if (maxY - contentBottom > catSize + 5) {
+                    safeZones.push({
+                        xMin: Math.max(5, r.left - 40),
+                        xMax: Math.min(maxX, r.right + 40),
+                        yMin: contentBottom, yMax: maxY,
+                        innerEdge: 'top'
+                    });
+                }
+
+                // Pick a zone, then a point biased toward the UI edge so she
+                // visibly hangs around the app rather than going to the screen edge.
+                if (safeZones.length > 0) {
+                    const zone = safeZones[Math.floor(Math.random() * safeZones.length)];
+                    const w = Math.max(1, zone.xMax - zone.xMin);
+                    const h = Math.max(1, zone.yMax - zone.yMin);
+                    const ux = Math.random();
+                    const uy = Math.random();
+                    let x, y;
+                    if (zone.innerEdge === 'right') {
+                        x = zone.xMax - ux * w * (1 - innerBias);
+                        y = zone.yMin + uy * h;
+                    } else if (zone.innerEdge === 'left') {
+                        x = zone.xMin + ux * w * (1 - innerBias);
+                        y = zone.yMin + uy * h;
+                    } else { // top (below the card)
+                        x = zone.xMin + ux * w;
+                        y = zone.yMin + uy * h * (1 - innerBias);
+                    }
+                    return { x, y };
                 }
             }
 
-            // Pick a random point within a random safe zone
-            if (safeZones.length > 0) {
-                const zone = safeZones[Math.floor(Math.random() * safeZones.length)];
-                const x = zone.xMin + Math.random() * (zone.xMax - zone.xMin);
-                const y = zone.yMin + Math.random() * (zone.yMax - zone.yMin);
-                return { x, y };
-            }
-
             // Fallback: try random positions avoiding obstacles
+            const obstacles = this.getObstacles();
             for (let i = 0; i < 30; i++) {
                 const x = Math.random() * maxX + 10;
                 const y = Math.random() * maxY + 10;
@@ -893,6 +940,99 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.appendChild(heart);
                 heart.addEventListener('animationend', () => heart.remove());
             }
+        }
+
+        // ---- SPEECH BUBBLE ----
+        // Shows a short text bubble above Hubi for ~5 seconds, suppressed
+        // during the treat sequence so the messages don't compete.
+        showSpeechBubble(text, durationMs = 5500) {
+            if (!text) return;
+            if (this.state === STATES.TREAT) return;
+
+            const layer = this.speechLayer;
+            const bubble = layer && layer.querySelector('.speech-bubble');
+            const textEl = bubble && bubble.querySelector('.speech-text');
+            if (!layer || !bubble || !textEl) return;
+
+            if (this.speechHideTimer) clearTimeout(this.speechHideTimer);
+            if (this.speechRemoveTimer) clearTimeout(this.speechRemoveTimer);
+
+            textEl.textContent = text;
+            this.positionSpeechBubble();
+
+            void bubble.offsetWidth;
+            bubble.classList.add('visible');
+            this.startSpeechFollow();
+
+            this.speechHideTimer = setTimeout(() => {
+                bubble.classList.remove('visible');
+                this.stopSpeechFollow();
+                this.speechRemoveTimer = setTimeout(() => {
+                    if (!bubble.classList.contains('visible')) textEl.textContent = '';
+                }, 500);
+            }, durationMs);
+        }
+
+        startSpeechFollow() {
+            if (this.speechFollowFrame) return;
+            const tick = () => {
+                this.speechFollowFrame = null;
+                if (!this.speechLayer) return;
+                if (!this.speechLayer.querySelector('.speech-bubble.visible')) return;
+                this.positionSpeechBubble();
+                this.speechFollowFrame = requestAnimationFrame(tick);
+            };
+            this.speechFollowFrame = requestAnimationFrame(tick);
+        }
+
+        stopSpeechFollow() {
+            if (this.speechFollowFrame) {
+                cancelAnimationFrame(this.speechFollowFrame);
+                this.speechFollowFrame = null;
+            }
+        }
+
+        positionSpeechBubble() {
+            if (!this.speechLayer || !this.sprite) return;
+            const bubble = this.speechLayer.querySelector('.speech-bubble');
+            if (!bubble) return;
+
+            // Anchor the speech layer to the sprite's actual on-screen rect.
+            // The sprite's inner .hubi-cat is 80×80 and may overflow the
+            // wrapper, so getBoundingClientRect is the source of truth.
+            const inner = this.sprite.querySelector('.hubi-cat') || this.sprite;
+            const rect = inner.getBoundingClientRect();
+            const w = rect.width || 60;
+            const h = rect.height || 60;
+            this.speechLayer.style.width = w + 'px';
+            this.speechLayer.style.height = h + 'px';
+            this.speechLayer.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
+
+            // Reset flip state and measure
+            bubble.classList.remove('left', 'below');
+            const bw = bubble.offsetWidth;
+            const bh = bubble.offsetHeight;
+
+            const margin = 8;
+            // Default: bubble sits ABOVE the sprite, anchored to its left half.
+            // Flip right→left if the bubble would overflow the right viewport edge.
+            const defaultRight = rect.left + 30 + bw;
+            if (defaultRight > window.innerWidth - margin) {
+                bubble.classList.add('left');
+            }
+            // Flip above→below if there's no room above.
+            if (rect.top - bh < margin) {
+                bubble.classList.add('below');
+            }
+        }
+
+        hideSpeechBubble() {
+            const bubble = this.speechLayer && this.speechLayer.querySelector('.speech-bubble');
+            if (!bubble) return;
+            if (this.speechHideTimer) { clearTimeout(this.speechHideTimer); this.speechHideTimer = null; }
+            if (this.speechRemoveTimer) { clearTimeout(this.speechRemoveTimer); this.speechRemoveTimer = null; }
+            this.stopSpeechFollow();
+            bubble.classList.remove('visible');
         }
 
         cleanupTreat() {

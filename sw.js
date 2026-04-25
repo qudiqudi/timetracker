@@ -7,6 +7,7 @@ const ASSETS_TO_CACHE = [
     './i18n.js',
     './qrcodegen.js',
     './qr.js',
+    './messages.js',
     './app.js',
     './sync.js',
     './pet.js',
