@@ -27,9 +27,9 @@ The app is hosted at `https://hubi.work`. Domain is registered via Cloudflare Re
 - `pet.css` -- CSS-only cat sprite and pet animations (idle, walking, sleeping, eating, chasing, petted, treat, plus per-task preview poses with props)
 - `dev.js` -- dev menu for testing animations. Localhost-only (conditionally loaded via `index.html`), excluded from deploy by the GitHub Actions workflow. Floating draggable panel with buttons for each animation state + treat trigger/reset.
 - `sync.js` -- cross-device sync module. Two sync modes:
-  - **Cloud Sync**: event-driven sync via Cloudflare Workers + KV. A `CloudSync` object manages pairing (phrase stored in localStorage) and sync triggers: monkey-patched `Storage.saveSessions`/`ActiveState.set`/`ActiveState.clear` set a dirty flag and schedule a debounced push; `visibilitychange` triggers a pull (push only if dirty); page load triggers an initial sync. No polling interval. The channel ID is derived as SHA-256("channel:" + phrase), separate from the encryption key derivation. The worker at `sync.hubi.work` is a dumb PUT/GET relay (30-day TTL, 512KB max). E2E encrypted -- the worker only sees opaque blobs.
+  - **Cloud Sync**: event-driven sync via Cloudflare Workers + KV. A `CloudSync` object manages pairing (phrase stored in localStorage) and sync triggers: monkey-patched `Storage.saveSessions`/`ActiveState.set`/`ActiveState.clear` set a dirty flag and schedule a debounced push; `visibilitychange` triggers a pull (push only if dirty); page load triggers an initial sync. No polling interval. The channel ID is derived as SHA-256("channel:" + phrase), separate from the encryption key derivation. The worker at `sync.hubi.work` is a dumb PUT/GET relay (30-day TTL, 512KB max). E2E encrypted -- the worker only sees opaque blobs. The active in-progress timer state is also sync'd, including a tombstone (`hubi_active_cleared_at`) so a clear on one device propagates instead of being resurrected by an older state from another device.
   - **QR/Manual Sync**: one-shot transfer. Export generates a combined QR code (phrase + encrypted data) that the importing device scans. Manual fallback: copy phrase + encrypted blob separately.
-  - Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation with random salt) using a 12-word cat-themed seed phrase (256-word vocabulary, no prefix-ambiguous pairs, all 12 words unique per phrase). Export format is HUBI2 (random per-export PBKDF2 salt). Phrase inputs have wallet-style autocomplete (type a few chars, dropdown suggests matching words). Also provides CSV export. Merge logic deduplicates sessions by ID, keeps later `endTime`. Imported sessions are sanitized (type-checked, fields whitelist-mapped including `task`) via `sanitizeSessions()` before storage.
+  - Encrypts sessions with AES-256-GCM (Web Crypto API, PBKDF2 key derivation with random salt) using a 12-word cat-themed seed phrase (256-word vocabulary, no prefix-ambiguous pairs, all 12 words unique per phrase). Export format is HUBI2 (random per-export PBKDF2 salt). Phrase inputs have wallet-style autocomplete (type a few chars, dropdown suggests matching words). Also provides CSV export. Merge logic deduplicates sessions by ID using `updatedAt` as the conflict tiebreaker (every mutation in `Storage.addSession`/`deleteSession`/edit stamps `updatedAt`); legacy sessions without `updatedAt` fall back to keeping the later `endTime`. Deletions are soft via a `deletedAt` tombstone so deletes propagate across devices. Imported sessions are sanitized (type-checked, fields whitelist-mapped including `task`, `updatedAt`, `deletedAt`) via `sanitizeSessions()` before storage.
 - `worker/` -- Cloudflare Worker for cloud sync relay + metrics. `wrangler.toml` + `src/index.js`. Deployed to `sync.hubi.work`. KV namespace `SYNC_KV` stores encrypted blobs keyed by 64-char hex channel IDs. CORS restricted to `hubi.work` + localhost. Rate-limited at the edge via Cloudflare WAF rule (5 PUT/10s per IP). Validates PUT body starts with `HUBI2:` and enforces 512KB size limit.
   - **Metrics & analytics**: The worker tracks three types of metrics, all stored as daily KV buckets:
     - `_m:YYYY-MM-DD` -- sync request counters (GET/PUT, KV hits/misses, errors, bytes, unique channel prefixes). Updated via `ctx.waitUntil()` on each sync request.
@@ -45,13 +45,16 @@ The app is hosted at `https://hubi.work`. Domain is registered via Cloudflare Re
 ## Data layer
 
 All data lives in `localStorage`:
-- `hubi_sessions` -- array of completed session records (work/break durations, timestamps, task category)
-- `hubi_active_state` -- current in-progress timer state (survives page refresh)
-- `hubi_treat_date` -- ISO date string of last treat given (prevents multiple treats per day)
-- `hubi_sync_phrase` -- stored cloud sync phrase (present when paired)
-- `hubi_sync_last` -- ISO timestamp of last successful cloud sync
+- `hubi_sessions` -- array of session records (work/break durations, timestamps, task category, `updatedAt`, optional `deletedAt` tombstone). `Storage.getSessions()` filters out tombstoned entries; `Storage.getAllRaw()` returns the full array (used by sync).
+- `hubi_active_state` -- current in-progress timer state (survives page refresh, includes `updatedAt` for cross-device merge).
+- `hubi_active_cleared_at` -- timestamp of the last `ActiveState.clear()`. Used as a tombstone so a stop on device A is not undone by an older active state pulled from device B.
+- `hubi_treat_date` -- ISO date string of last treat given (prevents multiple treats per day).
+- `hubi_sync_phrase` -- stored cloud sync phrase (present when paired).
+- `hubi_sync_last` -- ISO timestamp of last successful cloud sync.
 
-`Storage` and `ActiveState` objects in `app.js` are the only access points for session/timer data. Cloud sync keys are managed by the `CloudSync` object in `sync.js`.
+`Storage` and `ActiveState` objects in `app.js` are the only access points for session/timer data. Every mutating path stamps `updatedAt`; preserve that when adding new mutation sites or sync will silently lose the edit. Cloud sync keys are managed by the `CloudSync` object in `sync.js`.
+
+Tombstones expire so they don't grow unboundedly: `pruneLocal()` in `sync.js` drops `deletedAt` sessions older than 60 days and clears `hubi_active_cleared_at` after 30 days (when no active state is set). It runs at startup, and `mergeSessions()` also drops stale tombstones from both sides during sync. The 30-day floor for `hubi_active_cleared_at` is tied to the worker's KV TTL — a peer that hasn't synced in 30+ days can't pull a stale active state to resurrect anyway.
 
 ## Internationalization
 

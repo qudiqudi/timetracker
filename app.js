@@ -8,6 +8,11 @@ if ('serviceWorker' in navigator) {
 }
 
 // ---- Storage Helper ----
+const SNAPSHOT_PREFIX = 'hubi_snapshot_';
+const MAX_SNAPSHOTS = 7;
+const BACKUP_NUDGE_KEY = 'hubi_sessions_since_backup_v1';
+const BACKUP_NUDGE_THRESHOLD = 30;
+
 const Storage = {
     KEY: 'hubi_sessions',
     getAllRaw() {
@@ -20,20 +25,49 @@ const Storage = {
     getSessions() {
         return this.getAllRaw().filter(s => !s.deletedAt);
     },
+    // Hard guard: refuse to persist non-arrays or a full wipe of a non-empty
+    // history. Returns true on success, false if blocked. Callers do not need
+    // to react to false — the data is preserved either way; we just refuse
+    // to overwrite with something that's clearly a bug.
     saveSessions(sessions) {
+        if (!Array.isArray(sessions)) {
+            console.error('Storage.saveSessions blocked: not an array', sessions);
+            return false;
+        }
+        const current = this.getAllRaw();
+        const currAlive = current.filter(s => !s.deletedAt).length;
+        const newAlive = sessions.filter(s => !s.deletedAt).length;
+        // Block a full wipe when there's existing data. There's no UI path
+        // that should ever produce this; if we see it, it's a bug.
+        if (sessions.length === 0 && current.length > 0) {
+            console.error('Storage.saveSessions blocked: would wipe', current.length, 'sessions');
+            try { showToast(t('saveBlocked') || 'Save blocked — please reload'); } catch {}
+            return false;
+        }
         try {
             localStorage.setItem(this.KEY, JSON.stringify(sessions));
         } catch (e) {
             if (e.name === 'QuotaExceededError') {
                 showToast(t('storageFull') || 'Storage full — delete old sessions');
             }
+            return false;
         }
+        // If a sizeable shrink slipped through, surface a soft warning so the
+        // user can act (visit Sync → Recover earlier history).
+        const drop = currAlive - newAlive;
+        if (currAlive > 0 && drop > 5 && drop / currAlive > 0.20) {
+            try { showToast(t('shrinkWarning') || 'Some sessions are missing — check Sync to recover', 6000); } catch {}
+        }
+        return true;
     },
     addSession(session) {
         session.updatedAt = Date.now();
         const sessions = this.getAllRaw();
         sessions.unshift(session);
-        this.saveSessions(sessions);
+        if (this.saveSessions(sessions)) {
+            const n = parseInt(localStorage.getItem(BACKUP_NUDGE_KEY) || '0', 10) || 0;
+            try { localStorage.setItem(BACKUP_NUDGE_KEY, String(n + 1)); } catch {}
+        }
     },
     deleteSession(id) {
         const sessions = this.getAllRaw();
@@ -43,6 +77,107 @@ const Storage = {
             target.updatedAt = Date.now();
             this.saveSessions(sessions);
         }
+    },
+    // Undo a soft-delete. Used by the undo toast on the history page.
+    restoreSession(id) {
+        const sessions = this.getAllRaw();
+        const target = sessions.find(s => s.id === id);
+        if (target && target.deletedAt) {
+            delete target.deletedAt;
+            target.updatedAt = Date.now();
+            this.saveSessions(sessions);
+            return true;
+        }
+        return false;
+    },
+
+    // ---- Snapshots ----
+    // One per local day, keyed by YYYY-MM-DD. Used by the "Recover earlier
+    // history" UI and the auto-recovery banner. Snapshots are local-only
+    // and never sync'd.
+    todayKey() {
+        const d = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        return SNAPSHOT_PREFIX + `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    },
+    listSnapshotKeys() {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith(SNAPSHOT_PREFIX)) keys.push(k);
+        }
+        return keys.sort(); // ascending date
+    },
+    readSnapshot(key) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : null;
+        } catch {
+            return null;
+        }
+    },
+    snapshotToday() {
+        const key = this.todayKey();
+        const all = this.getAllRaw();
+        // Don't snapshot empty state — first install or freshly cleared. A
+        // recovery banner driven by an empty snapshot would be confusing.
+        if (!all.length) return;
+        if (localStorage.getItem(key)) return; // already snapped today
+        try {
+            localStorage.setItem(key, JSON.stringify(all));
+        } catch (e) {
+            if (e.name === 'QuotaExceededError') {
+                // Free space by dropping the oldest snapshot, then retry once.
+                const keys = this.listSnapshotKeys();
+                if (keys.length) {
+                    localStorage.removeItem(keys[0]);
+                    try { localStorage.setItem(key, JSON.stringify(all)); } catch {}
+                }
+            }
+        }
+        // Prune to the most recent N.
+        const keys = this.listSnapshotKeys();
+        while (keys.length > MAX_SNAPSHOTS) {
+            localStorage.removeItem(keys.shift());
+        }
+    },
+    snapshotMeta() {
+        return this.listSnapshotKeys().map(k => {
+            const arr = this.readSnapshot(k) || [];
+            return { key: k, date: k.slice(SNAPSHOT_PREFIX.length), count: arr.filter(s => !s.deletedAt).length };
+        });
+    },
+    // Additive merge from a snapshot: bring back any session present in the
+    // snapshot that's missing locally OR tombstoned locally but alive in the
+    // snapshot. Never overwrite a healthy current entry. Returns the count
+    // of sessions added or un-deleted.
+    restoreFromSnapshot(key) {
+        const snap = this.readSnapshot(key);
+        if (!snap) return 0;
+        const current = this.getAllRaw();
+        const byId = new Map(current.map(s => [s.id, s]));
+        let restored = 0;
+        const now = Date.now();
+        for (const s of snap) {
+            if (!s || typeof s.id !== 'string') continue;
+            const have = byId.get(s.id);
+            if (!have) {
+                const copy = { ...s };
+                delete copy.deletedAt;
+                copy.updatedAt = now;
+                current.push(copy);
+                byId.set(s.id, copy);
+                restored++;
+            } else if (have.deletedAt && !s.deletedAt) {
+                delete have.deletedAt;
+                have.updatedAt = now;
+                restored++;
+            }
+        }
+        if (restored > 0) this.saveSessions(current);
+        return restored;
     }
 };
 
@@ -798,22 +933,18 @@ function renderHistoryPage() {
         });
     });
 
-    // Delete listeners
+    // Delete listeners — immediate delete with an undo window. The actual
+    // delete is a soft tombstone; undo just clears it. Both transitions stamp
+    // updatedAt so they propagate via cloud sync.
     document.querySelectorAll('.card-delete').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.currentTarget.dataset.id;
-            showDialog(
-                '🗑️',
-                t('deleteSession'),
-                t('deleteDescription'),
-                t('delete'),
-                t('keepIt'),
-                () => {
-                    Storage.deleteSession(id);
-                    showToast(t('sessionDeleted'));
-                    renderHistoryPage();
-                }
-            );
+            Storage.deleteSession(id);
+            renderHistoryPage();
+            showActionToast(t('sessionDeleted'), t('undo'), () => {
+                Storage.restoreSession(id);
+                renderHistoryPage();
+            });
         });
     });
 }
@@ -1507,6 +1638,84 @@ function showToast(message, duration = 2500) {
     }, duration);
 }
 
+// Toast variant with a single action button (e.g. Undo). Calls onAction if
+// the user taps the button before the toast disappears.
+function showActionToast(message, actionLabel, onAction, duration = 8000) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    clearTimeout(toastTimeout);
+
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-action';
+    const text = document.createElement('span');
+    text.className = 'toast-message';
+    text.textContent = message;
+    const btn = document.createElement('button');
+    btn.className = 'toast-action-btn';
+    btn.type = 'button';
+    btn.textContent = actionLabel;
+    toast.appendChild(text);
+    toast.appendChild(btn);
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add('visible'));
+
+    let acted = false;
+    btn.addEventListener('click', () => {
+        if (acted) return;
+        acted = true;
+        clearTimeout(toastTimeout);
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 300);
+        try { onAction(); } catch (e) { console.warn('toast action failed', e); }
+    });
+
+    toastTimeout = setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 400);
+    }, duration);
+}
+
+// Persistent banner pinned to the top of the app. Used for the auto-recovery
+// prompt and the backup nudge. Up to one banner shown at a time per slot.
+function showBanner({ slot, message, primaryLabel, onPrimary, secondaryLabel, onSecondary }) {
+    document.querySelectorAll(`.app-banner[data-slot="${slot}"]`).forEach(b => b.remove());
+
+    const banner = document.createElement('div');
+    banner.className = 'app-banner';
+    banner.dataset.slot = slot;
+    const msg = document.createElement('div');
+    msg.className = 'app-banner-msg';
+    msg.textContent = message;
+    const actions = document.createElement('div');
+    actions.className = 'app-banner-actions';
+
+    if (secondaryLabel) {
+        const sBtn = document.createElement('button');
+        sBtn.type = 'button';
+        sBtn.className = 'btn btn-secondary app-banner-btn';
+        sBtn.textContent = secondaryLabel;
+        sBtn.addEventListener('click', () => {
+            banner.remove();
+            try { onSecondary && onSecondary(); } catch {}
+        });
+        actions.appendChild(sBtn);
+    }
+    const pBtn = document.createElement('button');
+    pBtn.type = 'button';
+    pBtn.className = 'btn btn-start app-banner-btn';
+    pBtn.textContent = primaryLabel;
+    pBtn.addEventListener('click', () => {
+        banner.remove();
+        try { onPrimary && onPrimary(); } catch {}
+    });
+    actions.appendChild(pBtn);
+
+    banner.appendChild(msg);
+    banner.appendChild(actions);
+    document.body.appendChild(banner);
+}
+
 // ---- Dialog ----
 function showDialog(emoji, title, text, confirmLabel, cancelLabel, onConfirm) {
     const existing = document.querySelector('.dialog-overlay');
@@ -1542,10 +1751,11 @@ function showDialog(emoji, title, text, confirmLabel, cancelLabel, onConfirm) {
 }
 
 // ---- Changelog ----
-const CHANGELOG_VERSION = 2;
+const CHANGELOG_VERSION = 3;
 const CHANGELOG_ENTRIES = [
     { emoji: '☁️', titleKey: 'whatsNewCloudSyncTitle', descKey: 'whatsNewCloudSyncDesc' },
     { emoji: '✏️', titleKey: 'whatsNewEditEntryTitle', descKey: 'whatsNewEditEntryDesc' },
+    { emoji: '🛟', titleKey: 'whatsNewSafetyNetTitle', descKey: 'whatsNewSafetyNetDesc' },
 ];
 
 function showChangelog() {
@@ -1592,3 +1802,56 @@ function showChangelog() {
 renderPage();
 sendBeacon(currentPage);
 showChangelog();
+checkRecoveryBanner();
+Storage.snapshotToday();
+
+// Auto-recovery: if local sessions look like they shrank dramatically since
+// yesterday's (or a recent) snapshot, prompt the user to restore. Snapshots
+// are only available from this update onwards — existing users have no prior
+// snapshots, so the banner cannot fire on the first launch after the update.
+const RECOVERY_DISMISS_KEY = 'hubi_recovery_dismissed_for';
+function checkRecoveryBanner() {
+    const meta = Storage.snapshotMeta();
+    if (meta.length === 0) return;
+    const currentAlive = Storage.getSessions().length;
+    // Find the most recent snapshot whose count is materially higher.
+    // Iterate newest → oldest.
+    for (let i = meta.length - 1; i >= 0; i--) {
+        const snap = meta[i];
+        const drop = snap.count - currentAlive;
+        if (drop > 10 && snap.count > 0 && drop / snap.count > 0.20) {
+            // Don't re-prompt for the same snapshot once dismissed.
+            const dismissed = localStorage.getItem(RECOVERY_DISMISS_KEY);
+            if (dismissed === snap.key) return;
+            const friendly = friendlySnapshotDate(snap.date);
+            showBanner({
+                slot: 'recovery',
+                message: t('recoveryBanner')(snap.count, friendly),
+                primaryLabel: t('recoveryRestore'),
+                onPrimary: () => {
+                    const restored = Storage.restoreFromSnapshot(snap.key);
+                    showToast(t('recoveryRestored')(restored));
+                    renderPage();
+                },
+                secondaryLabel: t('recoveryKeep'),
+                onSecondary: () => {
+                    localStorage.setItem(RECOVERY_DISMISS_KEY, snap.key);
+                }
+            });
+            return;
+        }
+    }
+}
+
+function friendlySnapshotDate(dateStr) {
+    // dateStr is YYYY-MM-DD. Return a relative phrase.
+    const [y, m, d] = dateStr.split('-').map(n => parseInt(n, 10));
+    const snap = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = Math.round((today - snap) / 86400000);
+    if (days <= 0) return t('today');
+    if (days === 1) return t('yesterday');
+    if (days < 7) return t('daysAgo')(days);
+    return dateStr;
+}

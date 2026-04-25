@@ -211,15 +211,46 @@ function exportCSV() {
     showToast(t('csvExported'));
 }
 
+// ---- Tombstone Pruning ----
+// The worker KV blob expires after 30 days, so a peer that hasn't synced in
+// 30+ days can't pull anyway. We keep deletion tombstones for 60 days so the
+// delete propagates through one full round-trip plus headroom, then drop them
+// to keep storage from growing unboundedly on long-paired devices.
+const TOMBSTONE_TTL_MS = 60 * 24 * 60 * 60 * 1000;
+const ACTIVE_CLEAR_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const STATE_CLEARED_KEY = 'hubi_active_cleared_at';
+
+function dropStaleTombstones(sessions, now) {
+    return sessions.filter(s => !(s.deletedAt && (now - s.deletedAt) > TOMBSTONE_TTL_MS));
+}
+
+// Run at startup so non-paired users (who never merge) also benefit, and
+// stale active-clear tombstones get cleared regardless of sync state.
+function pruneLocal() {
+    const now = Date.now();
+    const all = Storage.getAllRaw();
+    const kept = dropStaleTombstones(all, now);
+    if (kept.length !== all.length) {
+        // Bypass the patched saveSessions so prune doesn't mark dirty / push.
+        _origSave(kept);
+    }
+    const clearedAt = Number(localStorage.getItem(STATE_CLEARED_KEY)) || 0;
+    if (clearedAt && (now - clearedAt) > ACTIVE_CLEAR_TTL_MS && !ActiveState.get()) {
+        localStorage.removeItem(STATE_CLEARED_KEY);
+    }
+}
+
 // ---- Merge Logic ----
 
 function mergeSessions(existing, incoming) {
+    const now = Date.now();
+    const prunedExisting = dropStaleTombstones(existing, now);
     const map = new Map();
-    for (const s of existing) map.set(s.id, s);
+    for (const s of prunedExisting) map.set(s.id, s);
 
     let newCount = 0;
-    let changed = false;
-    for (const s of incoming) {
+    let changed = existing.length !== map.size;
+    for (const s of dropStaleTombstones(incoming, now)) {
         const have = map.get(s.id);
         if (!have) {
             map.set(s.id, s);
@@ -239,7 +270,13 @@ function mergeSessions(existing, incoming) {
 
     const merged = Array.from(map.values());
     merged.sort((a, b) => b.startTime - a.startTime);
-    return { merged, newCount, changed };
+
+    // Contract: union of pruned-existing with pruned-incoming can only add
+    // entries (cross-device deletes arrive as tombstones, which still count).
+    // If the merged size is smaller than the pruned local set, the inputs are
+    // suspect and the caller should refuse the save.
+    const safe = merged.length >= prunedExisting.length;
+    return { merged, newCount, changed, safe };
 }
 
 // ---- Cloud Sync ----
@@ -287,6 +324,29 @@ const CloudSync = {
         if (!res.ok) throw new Error(`Push failed: ${res.status}`);
     },
 
+    // Read the cloud blob for a phrase and return { cloudCount, localCount }
+    // without modifying any local state. Returns null on network/decrypt
+    // errors (caller treats as "unknown" and proceeds without preview).
+    async previewPair(phrase) {
+        try {
+            const channelId = await phraseToChannel(phrase);
+            const res = await fetch(`${SYNC_API}/sync/${channelId}`, { cache: 'no-store' });
+            const localCount = Storage.getSessions().length;
+            if (res.status === 404) return { cloudCount: 0, localCount };
+            if (!res.ok) return null;
+            const blob = await res.text();
+            if (!blob) return { cloudCount: 0, localCount };
+            const decrypted = await decryptData(blob, phrase);
+            const parsed = JSON.parse(decrypted);
+            const incoming = Array.isArray(parsed) ? parsed : (parsed.sessions || []);
+            const sanitized = sanitizeSessions(incoming);
+            const cloudCount = sanitized.filter(s => !s.deletedAt).length;
+            return { cloudCount, localCount };
+        } catch {
+            return null;
+        }
+    },
+
     async pull(phrase) {
         const channelId = await phraseToChannel(phrase);
         const res = await fetch(`${SYNC_API}/sync/${channelId}`, { cache: 'no-store' });
@@ -301,7 +361,15 @@ const CloudSync = {
         const incomingActive = Array.isArray(parsed) ? null : (parsed.active || null);
         const incoming = sanitizeSessions(incomingSessions);
         const existing = Storage.getAllRaw();
-        const { merged, newCount, changed } = mergeSessions(existing, incoming);
+        const { merged, newCount, changed, safe } = mergeSessions(existing, incoming);
+        if (!safe) {
+            console.error('Cloud pull rejected: merge would shrink history', {
+                existingAlive: existing.filter(s => !s.deletedAt).length,
+                mergedAlive: merged.filter(s => !s.deletedAt).length,
+            });
+            try { showToast(t('syncSafetyAbort')); } catch {}
+            return 0;
+        }
         if (changed) _origSave(merged);
         if (incomingActive && ActiveState.applyFromSync(incomingActive)) {
             try {
@@ -602,16 +670,28 @@ function renderCloudSyncSection() {
     `;
 }
 
+function previewMessage(cloudCount, localCount) {
+    if (cloudCount > 0 && localCount > 0) return t('pairPreviewBoth')(cloudCount, localCount);
+    if (cloudCount > 0) return t('pairPreviewCloudOnly')(cloudCount);
+    if (localCount > 0) return t('pairPreviewLocalOnly')(localCount);
+    return t('pairPreviewEmpty');
+}
+
+async function commitPair(appEl, phrase) {
+    CloudSync.setPhrase(phrase);
+    await CloudSync.initialSync();
+    showToast(t('cloudSyncStarted'));
+    renderSyncPage(appEl);
+}
+
 function attachCloudSyncListeners(appEl) {
     const paired = CloudSync.isPaired();
 
     if (!paired) {
         document.getElementById('cloud-generate')?.addEventListener('click', async () => {
+            // Newly-generated phrase has no cloud data, skip the preview.
             const phrase = generatePhrase();
-            CloudSync.setPhrase(phrase);
-            await CloudSync.initialSync();
-            showToast(t('cloudSyncStarted'));
-            renderSyncPage(appEl);
+            await commitPair(appEl, phrase);
         });
 
         document.getElementById('cloud-connect')?.addEventListener('click', async () => {
@@ -621,10 +701,26 @@ function attachCloudSyncListeners(appEl) {
                 showToast(t('invalidPhrase'));
                 return;
             }
-            CloudSync.setPhrase(phrase);
-            await CloudSync.initialSync();
-            showToast(t('cloudSyncStarted'));
-            renderSyncPage(appEl);
+            const btn = document.getElementById('cloud-connect');
+            btn.disabled = true;
+            btn.textContent = t('cloudSyncing');
+            const preview = await CloudSync.previewPair(phrase);
+            btn.disabled = false;
+            btn.textContent = t('connectWithPhrase');
+            if (!preview) {
+                // Network/decrypt issue — proceed as before. Merge stays
+                // additive so this is still safe.
+                await commitPair(appEl, phrase);
+                return;
+            }
+            showDialog(
+                '🔗',
+                t('pairPreviewTitle'),
+                previewMessage(preview.cloudCount, preview.localCount),
+                t('pairPreviewContinue'),
+                t('pairPreviewCancel'),
+                () => commitPair(appEl, phrase)
+            );
         });
     } else {
         document.getElementById('cloud-sync-now')?.addEventListener('click', async () => {
@@ -649,6 +745,8 @@ function attachCloudSyncListeners(appEl) {
 }
 
 function renderSyncPage(appEl) {
+    const nudge = parseInt(localStorage.getItem('hubi_sessions_since_backup_v1') || '0', 10) || 0;
+    const showNudge = nudge >= 30 && Storage.getSessions().length > 0;
     appEl.innerHTML = `
         <div class="page">
             <div class="page-header">
@@ -656,6 +754,16 @@ function renderSyncPage(appEl) {
                 <h1 class="page-title">${t('syncTitle')}</h1>
                 <p class="page-subtitle">${t('syncSubtitle')}</p>
             </div>
+
+            ${showNudge ? `
+            <div class="sync-nudge">
+                <div class="sync-nudge-msg">${t('backupNudgeMsg')}</div>
+                <div class="sync-nudge-actions">
+                    <button class="btn btn-secondary" id="nudge-later">${t('backupNudgeLater')}</button>
+                    <button class="btn btn-start" id="nudge-csv">${t('backupNudgeAction')}</button>
+                </div>
+            </div>
+            ` : ''}
 
             ${renderCloudSyncSection()}
 
@@ -678,6 +786,10 @@ function renderSyncPage(appEl) {
                 <span class="btn-icon">📋</span>
                 ${t('exportCSV')}
             </button>
+            <button class="btn btn-secondary" id="sync-recover" style="margin-top:8px">
+                <span class="btn-icon">🛟</span>
+                ${t('recoverHistory')}
+            </button>
         </div>
     `;
 
@@ -686,6 +798,87 @@ function renderSyncPage(appEl) {
     document.getElementById('sync-export').addEventListener('click', () => renderExportPage(appEl));
     document.getElementById('sync-import').addEventListener('click', () => renderImportPage(appEl));
     document.getElementById('sync-csv').addEventListener('click', exportCSV);
+    document.getElementById('sync-recover').addEventListener('click', () => renderRecoverPage(appEl));
+    if (showNudge) {
+        document.getElementById('nudge-csv').addEventListener('click', () => {
+            exportCSV();
+            localStorage.setItem('hubi_sessions_since_backup_v1', '0');
+            renderSyncPage(appEl);
+        });
+        document.getElementById('nudge-later').addEventListener('click', () => {
+            // Reset to 0 — don't keep nagging. They'll be reminded again
+            // after another 30 sessions.
+            localStorage.setItem('hubi_sessions_since_backup_v1', '0');
+            renderSyncPage(appEl);
+        });
+    }
+}
+
+function renderRecoverPage(appEl) {
+    const meta = Storage.snapshotMeta();
+    // Show newest first.
+    const ordered = meta.slice().reverse();
+    appEl.innerHTML = `
+        <div class="page">
+            <div class="page-header">
+                <h1 class="page-title">${t('recoverTitle')}</h1>
+                <p class="page-subtitle">${t('recoverHint')}</p>
+            </div>
+            ${ordered.length === 0 ? `
+                <div class="empty-state">
+                    <div class="empty-state-emoji">🛟</div>
+                    <div class="empty-state-text">${t('recoverEmpty')}</div>
+                </div>
+            ` : `
+                <div class="recover-list">
+                    ${ordered.map(s => `
+                        <div class="recover-row">
+                            <div class="recover-row-info">
+                                <div class="recover-row-date">${friendlySnapshotLabel(s.date)}</div>
+                                <div class="recover-row-count">${t('recoverSessionsCount')(s.count)}</div>
+                            </div>
+                            <button class="btn btn-secondary recover-row-btn" data-key="${escapeAttr(s.key)}">
+                                ${t('recoverRestoreBtn')}
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `}
+            <button class="btn btn-secondary" id="recover-back" style="margin-top:16px">
+                <span class="btn-icon">←</span>
+                ${t('back')}
+            </button>
+        </div>
+    `;
+
+    document.querySelectorAll('.recover-row-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const key = e.currentTarget.dataset.key;
+            const restored = Storage.restoreFromSnapshot(key);
+            if (restored > 0) {
+                showToast(t('recoveryRestored')(restored));
+                // After a restore there's nothing missing, so dismiss any
+                // pending recovery banner for that snapshot.
+                localStorage.setItem('hubi_recovery_dismissed_for', key);
+            } else {
+                showToast(t('recoveryNoChange'));
+            }
+            renderRecoverPage(appEl);
+        });
+    });
+    document.getElementById('recover-back').addEventListener('click', () => renderSyncPage(appEl));
+}
+
+function friendlySnapshotLabel(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(n => parseInt(n, 10));
+    const snap = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = Math.round((today - snap) / 86400000);
+    if (days <= 0) return t('today');
+    if (days === 1) return t('yesterday');
+    if (days < 7) return t('daysAgo')(days);
+    return dateStr;
 }
 
 async function renderExportPage(appEl) {
@@ -877,7 +1070,11 @@ function renderImportPage(appEl) {
         }
 
         const existing = Storage.getAllRaw();
-        const { merged, newCount } = mergeSessions(existing, incomingSessions);
+        const { merged, newCount, safe } = mergeSessions(existing, incomingSessions);
+        if (!safe) {
+            showToast(t('syncSafetyAbort'));
+            return;
+        }
         Storage.saveSessions(merged);
         if (incomingActive) ActiveState.applyFromSync(incomingActive);
 
@@ -891,6 +1088,9 @@ function renderImportPage(appEl) {
 
     document.getElementById('import-back').addEventListener('click', () => renderSyncPage(appEl));
 }
+
+// Drop stale tombstones at startup so they don't accumulate forever.
+pruneLocal();
 
 // Initial sync if previously paired
 CloudSync.initialSync();
