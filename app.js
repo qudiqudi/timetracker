@@ -16,11 +16,21 @@ if ('serviceWorker' in navigator) {
     let pendingReload = false;
     let reloading = false;
 
+    // True while a timer session is in progress. Avoid reloading mid-session
+    // even though ActiveState would survive — the reload still feels disruptive.
+    function hasActiveSession() {
+        try {
+            return !!localStorage.getItem('hubi_active_state');
+        } catch {
+            return false;
+        }
+    }
+
     function scheduleReload() {
         if (reloading) return;
-        // If the page is already hidden, reload right away — user won't see
-        // anything. Otherwise wait for them to look away.
-        if (document.visibilityState === 'hidden') {
+        // Reload right away if the page is hidden OR there's no active timer
+        // session. Otherwise defer until the user looks away.
+        if (document.visibilityState === 'hidden' || !hasActiveSession()) {
             reloading = true;
             window.location.reload();
         } else {
@@ -47,7 +57,10 @@ if ('serviceWorker' in navigator) {
         scheduleReload();
     });
 
-    navigator.serviceWorker.register('sw.js').then(reg => {
+    // updateViaCache: 'none' forces the browser to bypass the HTTP cache when
+    // checking sw.js for updates. Without it, Android Chrome can serve a stale
+    // sw.js for up to 24h and never see new deploys.
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
         // Periodic background check (hourly) for long-lived PWA sessions.
         setInterval(() => { reg.update().catch(() => {}); }, 60 * 60 * 1000);
     }).catch(() => {});
