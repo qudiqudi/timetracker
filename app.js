@@ -686,11 +686,11 @@ function renderActivePage() {
                         <span class="btn-icon">☕</span>
                         ${t('takeBreak')}
                     </button>
+                    <button class="btn btn-finish" id="btn-finish">
+                        <span class="btn-icon">🏁</span>
+                        ${t('finishWork')}
+                    </button>
                 `}
-                <button class="btn btn-finish" id="btn-finish">
-                    <span class="btn-icon">🏁</span>
-                    ${t('finishWork')}
-                </button>
             </div>
         </div>
     `;
@@ -699,8 +699,8 @@ function renderActivePage() {
         document.getElementById('btn-resume').addEventListener('click', resumeWork);
     } else {
         document.getElementById('btn-break').addEventListener('click', startBreak);
+        document.getElementById('btn-finish').addEventListener('click', confirmFinish);
     }
-    document.getElementById('btn-finish').addEventListener('click', confirmFinish);
 
     updateTimerDisplay();
     timerInterval = setInterval(updateTimerDisplay, 1000);
