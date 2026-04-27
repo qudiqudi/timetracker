@@ -45,18 +45,23 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// Activate — clean up old caches
+// Activate — clean up old caches and force-reload any open windows.
+// Force-reload is critical for Android PWAs: the previous SW's cached app.js
+// can't reliably trigger its own reload (visibility-gated). Doing it from the
+// new SW guarantees stale tabs flip to fresh code as soon as the new SW takes
+// over, with no user action required. Active timer state is persisted in
+// localStorage so it survives the navigation.
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames
-                    .filter((name) => name !== CACHE_NAME)
-                    .map((name) => caches.delete(name))
-            );
-        })
-    );
-    self.clients.claim();
+    event.waitUntil((async () => {
+        const cacheNames = await caches.keys();
+        const oldCaches = cacheNames.filter((name) => name !== CACHE_NAME);
+        const isUpdate = oldCaches.length > 0;
+        await Promise.all(oldCaches.map((name) => caches.delete(name)));
+        await self.clients.claim();
+        if (!isUpdate) return; // first install — no stale tabs to refresh
+        const clients = await self.clients.matchAll({ type: 'window' });
+        await Promise.all(clients.map((c) => c.navigate(c.url).catch(() => {})));
+    })());
 });
 
 // Fetch — serve from cache, fallback to network (no dynamic caching)
