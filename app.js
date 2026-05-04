@@ -1863,6 +1863,7 @@ function showChangelog() {
     overlay.className = 'dialog-overlay';
     overlay.innerHTML = `
         <div class="dialog changelog-dialog">
+            <button class="dialog-close" id="changelog-close" aria-label="Close">&times;</button>
             <div class="dialog-emoji">✨</div>
             <div class="dialog-title">${t('whatsNew')}</div>
             <div class="changelog-list">
@@ -1880,10 +1881,14 @@ function showChangelog() {
     `;
     document.body.appendChild(overlay);
 
-    const closeBtn = document.getElementById('changelog-awesome');
-    closeBtn.addEventListener('click', () => {
+    const dismiss = () => {
         localStorage.setItem(CHANGELOG_KEY, String(CHANGELOG_VERSION));
         overlay.remove();
+    };
+    document.getElementById('changelog-awesome').addEventListener('click', dismiss);
+    document.getElementById('changelog-close').addEventListener('click', dismiss);
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) dismiss();
     });
 }
 
